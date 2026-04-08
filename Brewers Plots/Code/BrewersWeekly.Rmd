@@ -1,0 +1,20 @@
+---
+title: "Weekly Monitoring"
+author: "Savanna Saunders"
+date: "2026-04-08"
+output: html_document
+---
+
+## Libraries
+```{r import libraries}
+library(tidyverse)
+
+```
+
+## Data Wranging
+```{r Data Wrangling}
+# Import Weekly data - Last updated April 8th, 2026
+weekly4_8 <- read_csv("Brewers Plots/DataFiles/Capstone Data - Weekly Brewers Bay monitoring.csv")
+
+```
+
