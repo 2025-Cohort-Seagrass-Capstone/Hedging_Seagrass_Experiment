@@ -16,5 +16,8 @@ library(tidyverse)
 # Import Weekly data - Last updated April 8th, 2026
 weekly4_8 <- read_csv("Brewers Plots/DataFiles/Capstone Data - Weekly Brewers Bay monitoring.csv")
 
+clean_weekly <- weekly4_8 %>% #took out columns refering to recorder
+  select("Date", "Plot ID":"Grazing (Y/N)")
+
 ```
 
