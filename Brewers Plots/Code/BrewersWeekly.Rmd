@@ -8,16 +8,64 @@ output: html_document
 ## Libraries
 ```{r import libraries}
 library(tidyverse)
+library(readxl)
+library(sjPlot)
+library(performance)
 
 ```
 
 ## Data Wranging
 ```{r Data Wrangling}
 # Import Weekly data - Last updated April 8th, 2026
-weekly4_8 <- read_csv("Brewers Plots/DataFiles/Capstone Data - Weekly Brewers Bay monitoring.csv")
+weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly$Date <- as.Date(weekly$Date)
 
-clean_weekly <- weekly4_8 %>% #took out columns refering to recorder
-  select("Date", "Plot ID":"Grazing (Y/N)")
+before_after <- weekly%>% 
+  filter(Date %in% c("2026-02-28", "2026-04-18"))
+
+onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "One Time Measurements") %>% 
+  select(-Date)
+
+brewers <- before_after %>%
+  left_join(onetime, by = "Plot ID") %>% 
+  select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
+
+brewers_weekly<- weekly %>%
+  left_join(onetime, by = "Plot ID") %>% 
+  select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
+
+```
+
+## Data Visualization
+```{r}
+ggplot(brewers_weekly) +
+  geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  scale_y_continuous(breaks = c(0,1)) +
+  # labs(x = "Sample Day", y = "Egg Presence") +
+  theme_bw()
+
+ggplot(brewers) +
+  geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  # labs(x = "Sample Day", y = "Egg Presence") +
+  theme_bw()
+
+ggplot(brewers) +
+  geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  # labs(x = "Sample Day", y = "Egg Presence") +
+  theme_bw()
+
+```
+
+## Binomial Logistic Regression
+```{r}
+brewersmodel <- glm(`Meets Hedge` ~ `Hedging Type`, family = "binomial", data = brewers)
+brewersmodel
+
+check_model(brewersmodel)
+check_overdispersion(brewersmodel)
 
 ```
 
