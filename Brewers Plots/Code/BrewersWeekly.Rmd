@@ -30,6 +30,10 @@ brewers <- before_after %>%
   left_join(onetime, by = "Plot ID") %>% 
   select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
 
+brewers$totalvolumne_m3 <- 
+  ((brewers$`N Length (cm)` *  brewers$`N Height (cm)` *  brewers$`N Width (cm)`) + (brewers$`E Length (cm)` *  brewers$`E Height (cm)` *  brewers$`E Width (cm)`) + (brewers$`S Length (cm)` *  brewers$`S Height (cm)` *  brewers$`S Width (cm)`) + (brewers$`W Length (cm)` *  brewers$`W Height (cm)` *  brewers$`W Width (cm)`)) / 1000000
+  
+
 brewers_weekly<- weekly %>%
   left_join(onetime, by = "Plot ID") %>% 
   select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
@@ -38,34 +42,56 @@ brewers_weekly<- weekly %>%
 
 ## Data Visualization
 ```{r}
+## Weekly plot
 ggplot(brewers_weekly) +
   geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
               alpha = 0.4, width = 0, height = 0.01) +
   scale_y_continuous(breaks = c(0,1)) +
-  # labs(x = "Sample Day", y = "Egg Presence") +
   theme_bw()
 
+## meets before/after plot
 ggplot(brewers) +
   geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
               alpha = 0.4, width = 0, height = 0.01) +
-  # labs(x = "Sample Day", y = "Egg Presence") +
   theme_bw()
 
+## Grwth/O before/after plot
 ggplot(brewers) +
-  geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
+  geom_jitter(aes(x = Date, y = `Grwth/O`, color = as.factor(`Hedging Type`)),
               alpha = 0.4, width = 0, height = 0.01) +
-  # labs(x = "Sample Day", y = "Egg Presence") +
+  theme_bw()
+
+## Grwth/U before/after plot
+ggplot(brewers) +
+  geom_jitter(aes(x = Date, y = `Grwth/U`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
   theme_bw()
 
 ```
 
 ## Binomial Logistic Regression
 ```{r}
-brewersmodel <- glm(`Meets Hedge` ~ `Hedging Type`, family = "binomial", data = brewers)
-brewersmodel
 
-check_model(brewersmodel)
-check_overdispersion(brewersmodel)
+## Meets the Hedge
+meetsmodel <- glm(`Meets Hedge` ~ `Hedging Type` + totalvolumne_m3, family = "binomial", data = brewers)
+summary(meetsmodel)
+
+check_model(meetsmodel)
+check_overdispersion(meetsmodel)
+
+## Growth Under
+growthUmodel <- glm(`Grwth/U` ~ `Hedging Type` + totalvolumne_m3, family = "binomial", data = brewers)
+summary(growthUmodel)
+
+check_model(growthUmodel)
+check_overdispersion(growthUmodel)
+
+## Growth Over
+growthOmodel <- glm(`Grwth/O` ~ `Hedging Type` + totalvolumne_m3, family = "binomial", data = brewers)
+summary(growthOmodel)
+
+check_model(growthOmodel)
+check_overdispersion(growthOmodel)
 
 ```
 
