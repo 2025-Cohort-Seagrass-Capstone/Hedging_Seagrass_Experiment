@@ -26,17 +26,16 @@ before_after <- weekly%>%
 onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date)
 
+brewers_weekly<- weekly %>%
+  left_join(onetime, by = "Plot ID") %>% 
+  select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
+
 brewers <- before_after %>%
   left_join(onetime, by = "Plot ID") %>% 
   select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
 
 brewers$totalvolumne_m3 <- 
   ((brewers$`N Length (cm)` *  brewers$`N Height (cm)` *  brewers$`N Width (cm)`) + (brewers$`E Length (cm)` *  brewers$`E Height (cm)` *  brewers$`E Width (cm)`) + (brewers$`S Length (cm)` *  brewers$`S Height (cm)` *  brewers$`S Width (cm)`) + (brewers$`W Length (cm)` *  brewers$`W Height (cm)` *  brewers$`W Width (cm)`)) / 1000000
-  
-
-brewers_weekly<- weekly %>%
-  left_join(onetime, by = "Plot ID") %>% 
-  select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
 
 ```
 
@@ -52,6 +51,21 @@ ggplot(brewers_weekly) +
 ## meets before/after plot
 ggplot(brewers) +
   geom_jitter(aes(x = Date, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  theme_bw()
+
+ggplot(filter(brewers, Date == "2026-04-18")) +
+  geom_jitter(aes(x = `totalvolumne_m3`, y = `Meets Hedge`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  theme_bw()
+
+ggplot(filter(brewers, Date == "2026-04-18")) +
+  geom_jitter(aes(x = `totalvolumne_m3`, y = `Grwth/O`, color = as.factor(`Hedging Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  theme_bw()
+
+ggplot(filter(brewers, Date == "2026-04-18")) +
+  geom_jitter(aes(x = `totalvolumne_m3`, y = `Grwth/U`, color = as.factor(`Hedging Type`)),
               alpha = 0.4, width = 0, height = 0.01) +
   theme_bw()
 
@@ -79,8 +93,20 @@ summary(meetsmodel)
 check_model(meetsmodel)
 check_overdispersion(meetsmodel)
 
+meetsmodel <- glm(`Meets Hedge` ~ `Hedging Type`, family = "binomial", data = brewers)
+summary(meetsmodel)
+
+check_model(meetsmodel)
+check_overdispersion(meetsmodel)
+
 ## Growth Under
 growthUmodel <- glm(`Grwth/U` ~ `Hedging Type` + totalvolumne_m3, family = "binomial", data = brewers)
+summary(growthUmodel)
+
+check_model(growthUmodel)
+check_overdispersion(growthUmodel)
+
+growthUmodel <- glm(`Grwth/U` ~ `Hedging Type`, family = "binomial", data = brewers)
 summary(growthUmodel)
 
 check_model(growthUmodel)
@@ -93,5 +119,43 @@ summary(growthOmodel)
 check_model(growthOmodel)
 check_overdispersion(growthOmodel)
 
-```
+growthOmodel <- glm(`Grwth/O` ~ `Hedging Type`, family = "binomial", data = brewers)
+summary(growthOmodel)
 
+check_model(growthOmodel)
+check_overdispersion(growthOmodel)
+
+ggplot(brewers_weekly, aes(Date, ))+
+  geom_bar(fill = `Hedging Type`)
+
+```
+No significant results 
+using a propotional stacked bar plot (the proportion that met the hedge)
+p(Hedge) y time on x color by hedge 
+
+## Including time
+```{r}
+# predicting the day at which the seagrass meets the head (like octopus example)
+
+brewers_weekly$day <- brewers_weekly$Date - brewers_weekly$Date[1]
+
+Day since starting is now the response variable
+
+meetsmodeltime <- glm(`Meets Hedge` ~ `Hedging Type` + day, family = "binomial", data = brewers_weekly)
+summary(meetsmodeltime)
+
+check_model(meetsmodeltime)
+check_overdispersion(meetsmodel)
+
+ggpredict to plot the fitted line on the time 
+
+as.numeric the day column
+
+gOmodeltime <- glm(`Grwth/O` ~ `Hedging Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+summary(gOmodeltime)
+
+check_model(gOmodeltime)
+check_overdispersion(gOmodeltime)
+```
+ the seagrass changing through time 
+ even in this short time we are seeing a significant effect of day 

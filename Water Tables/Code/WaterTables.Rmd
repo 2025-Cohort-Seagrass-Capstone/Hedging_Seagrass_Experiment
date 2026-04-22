@@ -1,0 +1,59 @@
+---
+title: "WaterTables"
+author: "Savanna Saunders"
+date: "2026-04-22"
+output: html_document
+---
+## Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(performance)
+```
+
+## Data Wrangling
+```{r cars}
+tables_weekly <- read_xlsx("Water Tables/DataFiles/Capstone Data_4_22.xlsx", sheet = "Water tables")
+tables_weekly$Date <- as.Date(tables_weekly$Date)
+
+clean_tables <- tables_weekly %>% 
+  separate(`Plug ID`, into = c("Transplant", "plot"), sep = "\\.") %>% 
+  select("Date", "Transplant", "Plot ID":"Blade length C (cm)")
+```
+clean_tables:
+  Have NAs
+  some have multiple values for one
+  no hole
+  no tag NO TAG
+  DEAD
+  GONE
+  
+## Data Visualization
+```{r}
+ggplot(clean_tables, aes(Transplant, `Shoot count`)) +
+  geom_boxplot(fill = "lightblue")
+
+ggplot(clean_tables, aes(x = Transplant, y = `Shoot count`)) +
+  geom_point(size = 2.5, alpha = 0.5) +
+
+
+
+```
+
+## Stats
+```{r}
+shoot_pois<- glm(`Shoot count` ~ Transplant, data = clean_tables, family = "poisson")
+
+summary(shoot_pois)
+
+check_model(shoot_pois)
+check_overdispersion(shoot_pois)
+
+ggplot(clean_tables, aes(x = Transplant, y = `Shoot count`)) +
+  geom_point(size = 2.5, alpha = 0.5) +
+  geom_smooth(method = 'glm', method.args = list(family = 'poisson'),
+              color = "black") +
+  theme_bw()
+```
+B is significant from PB 
+PP is not significant from PP
