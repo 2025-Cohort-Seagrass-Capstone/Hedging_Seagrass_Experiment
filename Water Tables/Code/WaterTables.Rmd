@@ -18,7 +18,11 @@ tables_weekly$Date <- as.Date(tables_weekly$Date)
 
 clean_tables <- tables_weekly %>% 
   separate(`Plug ID`, into = c("Transplant", "plot"), sep = "\\.") %>% 
-  select("Date", "Transplant", "Plot ID":"Blade length C (cm)")
+  select("Date", "Transplant", "plot", "Shoot count":"Blade length C (cm)")
+
+
+before_after <- clean_tables%>% 
+  filter(Date %in% c("2026-02-28", "2026-04-18"))
 ```
 clean_tables:
   Have NAs
@@ -30,11 +34,14 @@ clean_tables:
   
 ## Data Visualization
 ```{r}
+# Over whole 6 weeks
 ggplot(clean_tables, aes(Transplant, `Shoot count`)) +
   geom_boxplot(fill = "lightblue")
 
-ggplot(clean_tables, aes(x = Transplant, y = `Shoot count`)) +
-  geom_point(size = 2.5, alpha = 0.5) +
+ggplot(before_after, aes(Transplant, `Shoot count`, fill = as.factor(Date))) +
+  geom_boxplot()
+
+
 
 
 
@@ -54,6 +61,47 @@ ggplot(clean_tables, aes(x = Transplant, y = `Shoot count`)) +
   geom_smooth(method = 'glm', method.args = list(family = 'poisson'),
               color = "black") +
   theme_bw()
+
+Boxplot with letters
+
+sub <- before_after %>% 
+  select(Date, Transplant, `plot`, `Shoot count`) %>% 
+  pivot_wider(
+                    names_from = Date,
+                    values_from = `Shoot count`) %>% 
+  mutate(subtracted = `2026-04-18` - `2026-02-28`)
+
+ggplot(sub, aes(Transplant, subtracted)) +
+  geom_point()
+
+ggplot(clean_tables, aes(Date, `Shoot count`, color = paste(clean_tables$Transplant, clean_tables$plot)) ) +
+  geom_point(aes(shape = Transplant))+
+  geom_line(aes(group = paste(clean_tables$Transplant, clean_tables$plot)), alpha = 0.5) +
+  facet_wrap(~Transplant)
+
+subtracted
+## just before and after experiment
+bashoot_pois<- glm(subtracted ~ Transplant, data = sub)
+
+summary(bashoot_pois) Not super meaningful with only 9 data points 
+
+check_model(bashoot_pois)
+check_overdispersion(bashoot_pois)
+
+ggplot(before_after, aes(x = Transplant, y = `Shoot count`)) +
+  geom_point(size = 2.5, alpha = 0.5) +
+  geom_smooth(method = 'glm', method.args = list(family = 'poisson'),
+              color = "black") +
+  theme_bw()
 ```
 B is significant from PB 
 PP is not significant from PP
+
+check the PB 2 data 
+
+growth rate total growth/number of days 
+weekly growth rate 
+
+continous normal linear model 
+depth of table is a limit could result in non linear 
+
