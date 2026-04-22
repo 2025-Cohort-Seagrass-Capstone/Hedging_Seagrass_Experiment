@@ -13,16 +13,46 @@ library(performance)
 
 ## Data Wrangling
 ```{r cars}
-tables_weekly <- read_xlsx("Water Tables/DataFiles/Capstone Data_4_22.xlsx", sheet = "Water tables")
+## For Shoot Count
+tables_weekly <- read_xlsx("Water Tables/DataFiles/watertables_4_22_updated_Capstone Data.xlsx", sheet = "Cleaned Water tables")
 tables_weekly$Date <- as.Date(tables_weekly$Date)
 
 clean_tables <- tables_weekly %>% 
   separate(`Plug ID`, into = c("Transplant", "plot"), sep = "\\.") %>% 
-  select("Date", "Transplant", "plot", "Shoot count":"Blade length C (cm)")
-
+  select("Date", "Transplant", "plot", "Shoot count")
 
 before_after <- clean_tables%>% 
   filter(Date %in% c("2026-02-28", "2026-04-18"))
+
+## For Blade Length
+
+#All of the Gones, dead, etc. were changed to be NA
+blades_NAs <- read_xlsx("Water Tables/DataFiles/watertables_4_22_updated_Capstone Data.xlsx", sheet = "Cleaned Water tables (NAs)")
+tables_weekly$Date <- as.Date(tables_weekly$Date)
+
+blades_NAs_clean <- blades_NAs %>% 
+  separate(`Plug ID`, into = c("Transplant", "plot"), sep = "\\.", remove = FALSE) %>% 
+  select("Date", "Transplant", "plot", "Plug ID", "Blade length A (cm)":"Blade length C (cm)")
+blades_NAs_clean$`Blade length A (cm)` <- as.numeric(blades_NAs_clean$`Blade length A (cm)`)
+blades_NAs_clean$`Blade length B (cm)` <- as.numeric(blades_NAs_clean$`Blade length B (cm)`)
+blades_NAs_clean$`Blade length C (cm)` <- as.numeric(blades_NAs_clean$`Blade length C (cm)`)
+
+#All of the Gones, dead, etc. were changed to be 0
+blades_0s <- read_xlsx("Water Tables/DataFiles/watertables_4_22_updated_Capstone Data.xlsx", sheet = "Cleaned Water tables (0s)")
+tables_weekly$Date <- as.Date(tables_weekly$Date)
+
+blades_0s_clean <- blades_0s %>% 
+  separate(`Plug ID`, into = c("Transplant", "plot"), sep = "\\.", remove = FALSE) %>% 
+  select("Date", "Transplant", "plot", "Plug ID", "Blade length A (cm)":"Blade length C (cm)")
+
+blades_0s_clean$`Blade length A (cm)` <- as.numeric(blades_0s_clean$`Blade length A (cm)`)
+blades_0s_clean$`Blade length B (cm)` <- as.numeric(blades_0s_clean$`Blade length B (cm)`)
+blades_0s_clean$`Blade length C (cm)` <- as.numeric(blades_0s_clean$`Blade length C (cm)`)
+
+                                                    
+
+
+
 ```
 clean_tables:
   Have NAs
@@ -34,6 +64,8 @@ clean_tables:
   
 ## Data Visualization
 ```{r}
+## Shoot Count
+
 # Over whole 6 weeks
 ggplot(clean_tables, aes(Transplant, `Shoot count`)) +
   geom_boxplot(fill = "lightblue")
@@ -41,29 +73,7 @@ ggplot(clean_tables, aes(Transplant, `Shoot count`)) +
 ggplot(before_after, aes(Transplant, `Shoot count`, fill = as.factor(Date))) +
   geom_boxplot()
 
-
-
-
-
-```
-
-## Stats
-```{r}
-shoot_pois<- glm(`Shoot count` ~ Transplant, data = clean_tables, family = "poisson")
-
-summary(shoot_pois)
-
-check_model(shoot_pois)
-check_overdispersion(shoot_pois)
-
-ggplot(clean_tables, aes(x = Transplant, y = `Shoot count`)) +
-  geom_point(size = 2.5, alpha = 0.5) +
-  geom_smooth(method = 'glm', method.args = list(family = 'poisson'),
-              color = "black") +
-  theme_bw()
-
-Boxplot with letters
-
+#Subtracting last day from first day
 sub <- before_after %>% 
   select(Date, Transplant, `plot`, `Shoot count`) %>% 
   pivot_wider(
@@ -74,34 +84,102 @@ sub <- before_after %>%
 ggplot(sub, aes(Transplant, subtracted)) +
   geom_point()
 
-ggplot(clean_tables, aes(Date, `Shoot count`, color = paste(clean_tables$Transplant, clean_tables$plot)) ) +
-  geom_point(aes(shape = Transplant))+
-  geom_line(aes(group = paste(clean_tables$Transplant, clean_tables$plot)), alpha = 0.5) +
-  facet_wrap(~Transplant)
+## Blade Length
 
-subtracted
-## just before and after experiment
+# Weekly growth rate (week 2-week1, week3-week2 etc.)
+blades_0s_clean$weekly_growth <- ave(blades_0s_clean$`Blade length A (cm)`,
+                                 blades_0s_clean$`Plug ID`,
+                                 FUN = function(x) c(NA, diff(x)))
+
+blades_NAs_clean$weekly_growth <- ave(blades_NAs_clean$`Blade length A (cm)`,
+                                 blades_NAs_clean$`Plug ID`,
+                                 FUN = function(x) c(NA, diff(x)))
+
+#Weekly Growth rate over time
+ggplot(blades_0s_clean, aes(Date, weekly_growth, color = `Plug ID`))+
+  geom_point(aes(shape = Transplant))+
+  geom_line(aes(group = `Plug ID`), alpha = 0.5) +
+  facet_wrap(~Transplant, axis.labels = )+
+  theme_bw()
+
+```
+
+### Stats
+```{r}
+## Shoot Counts
+
+#Poisson Regression All weeks shoot count & transplant
+shoot_pois<- glm(`Shoot count` ~ Transplant, data = clean_tables, family = "poisson")
+
+summary(shoot_pois)
+
+check_model(shoot_pois)
+check_overdispersion(shoot_pois)
+
+## Subtracted data - before and after experiment
 bashoot_pois<- glm(subtracted ~ Transplant, data = sub)
 
-summary(bashoot_pois) Not super meaningful with only 9 data points 
+summary(bashoot_pois) 
 
 check_model(bashoot_pois)
 check_overdispersion(bashoot_pois)
 
-ggplot(before_after, aes(x = Transplant, y = `Shoot count`)) +
-  geom_point(size = 2.5, alpha = 0.5) +
-  geom_smooth(method = 'glm', method.args = list(family = 'poisson'),
-              color = "black") +
-  theme_bw()
+## Blade Length 
+# growth rate total growth/number of days 
+# weekly growth rate 
+# 
+# continous normal linear model 
+# depth of table is a limit could result in non linear 
+
+
 ```
-B is significant from PB 
-PP is not significant from PP
 
-check the PB 2 data 
+Shoot Count:
+All weeks Data Results
 
-growth rate total growth/number of days 
-weekly growth rate 
+Coefficients:
+             Estimate Std. Error z value Pr(>|z|)    
+(Intercept) B 1.77777    0.08392  21.185  < 2e-16 ***
+TransplantPB  0.69315    0.10278   6.744 1.54e-11 ***
+TransplantPP -0.20224    0.12515  -1.616    0.106    
 
-continous normal linear model 
-depth of table is a limit could result in non linear 
+• Transplant B is signifcantly different from PB
+• Transplant B is signifcantly different from 0
+• Transplant B is not signifcantly different from PP
+
+Subtracted Data results
+  • Not super meaningful with only 9 data points
+  
+Blade Length:
+
+## Graphing
+```{r}
+## Shoot count Water Table Plot - NEEDS TO BE cleaned up aestetically 
+ggplot(clean_tables, aes(Date, `Shoot count`, color = paste(clean_tables$Transplant, clean_tables$plot)) ) +
+  geom_point(aes(shape = Transplant))+
+  geom_line(aes(group = paste(clean_tables$Transplant, clean_tables$plot)), alpha = 0.5) +
+  facet_wrap(~Transplant, axis.labels = )+
+  theme_bw()
+
+## Boxplot of shoot count with sigmificance
+# ?? does this need to be the mean with sem?
+pvals <- summary(shoot_pois)$coefficients[,4]
+stars <- cut(pvals,
+             breaks = c(-Inf, 0.001, 0.01, 0.05, Inf),
+             labels = c("***", "**", "*", "ns"))
+
+ggplot(clean_tables, aes(Transplant, `Shoot count`, fill = as.factor(Transplant))) +
+  geom_boxplot()+
+  annotate("text", x = 1:3, y = max(clean_tables$`Shoot count`) + 1, label = stars)+
+  ylim(0,16)+
+  theme_bw()+
+  labs(y = "Shoot Count", x = "Transplant Method")+
+  scale_x_discrete(labels = c("B" = "Bucket", "PB" = "Pot and Bag", "PP" = "Peat Pot"))+
+  theme(
+    legend.position = "none"
+  )
+
+# caption = "Letters indicate significant differences (Tukey HSD, α=0.05)"
+  
+```
 
