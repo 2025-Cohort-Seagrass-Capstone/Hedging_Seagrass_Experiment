@@ -9,6 +9,7 @@ output: html_document
 library(tidyverse)
 library(readxl)
 library(performance)
+library(patchwork)
 ```
 
 ## Data Wrangling
@@ -87,20 +88,61 @@ ggplot(sub, aes(Transplant, subtracted)) +
 ## Blade Length
 
 # Weekly growth rate (week 2-week1, week3-week2 etc.)
-blades_0s_clean$weekly_growth <- ave(blades_0s_clean$`Blade length A (cm)`,
-                                 blades_0s_clean$`Plug ID`,
-                                 FUN = function(x) c(NA, diff(x)))
+blades_0s_clean$weekly_growth_A <- ave(blades_0s_clean$`Blade length A (cm)`, blades_0s_clean$`Plug ID`, FUN = function(x) c(NA, diff(x)))
 
-blades_NAs_clean$weekly_growth <- ave(blades_NAs_clean$`Blade length A (cm)`,
-                                 blades_NAs_clean$`Plug ID`,
-                                 FUN = function(x) c(NA, diff(x)))
+blades_NAs_clean$weekly_growth_A <- ave(blades_NAs_clean$`Blade length A (cm)`, blades_NAs_clean$`Plug ID`, FUN = function(x) c(NA, diff(x)))
 
-#Weekly Growth rate over time
-ggplot(blades_0s_clean, aes(Date, weekly_growth, color = `Plug ID`))+
+blades_0s_clean$weekly_growth_B <- ave(blades_0s_clean$`Blade length B (cm)`, blades_0s_clean$`Plug ID`, FUN = function(x) c(NA, diff(x)))
+
+blades_NAs_clean$weekly_growth_B <- ave(blades_NAs_clean$`Blade length B (cm)`, blades_NAs_clean$`Plug ID`, FUN = function(x) c(NA, diff(x)))
+
+blades_0s_clean$weekly_growth_C <- ave(blades_0s_clean$`Blade length C (cm)`, blades_0s_clean$`Plug ID`, FUN = function(x) c(NA, diff(x)))
+
+blades_NAs_clean$weekly_growth_C <- ave(blades_NAs_clean$`Blade length C (cm)`, blades_NAs_clean$`Plug ID`, FUN = function(x) c(NA, diff(x)))
+
+#Weekly Growth rate over time 0s
+# ggplot(blades_0s_clean, aes(Date, weekly_growth, color = `Plug ID`))+
+#   geom_point(aes(shape = Transplant))+
+#   geom_line(aes(group = `Plug ID`), alpha = 0.5) +
+#   facet_wrap(~Transplant, axis.labels = )+
+#   labs(title = "Blades 0s")+
+#   theme_bw()
+
+graph <- function(df, blade, title){
+  ggplot({{df}}, aes(Date, {{blade}}, color = `Plug ID`))+
   geom_point(aes(shape = Transplant))+
   geom_line(aes(group = `Plug ID`), alpha = 0.5) +
   facet_wrap(~Transplant, axis.labels = )+
+  labs(title = {{title}})+
+  theme_bw()+
+  theme(
+    legend.position = "none"
+  )
+}
+
+a <- graph(blades_0s_clean, weekly_growth_A, "Blades 0s")
+b <- graph(blades_0s_clean, weekly_growth_B, "Blades 0s")
+c <- graph(blades_0s_clean, weekly_growth_C, "Blades 0s")
+a/b/c
+
+an <- graph(blades_NAs_clean, weekly_growth_A, "Blades NAs")
+bn <- graph(blades_NAs_clean, weekly_growth_B, "Blades NAs")
+cn <- graph(blades_NAs_clean, weekly_growth_C, "Blades NAs")
+an/bn/cn
+
+(a/b/c) + (an/bn/cn)
+
+#Weekly Growth rate over time NAs
+na <- ggplot(blades_NAs_clean, aes(Date, weekly_growth, color = `Plug ID`))+
+  geom_point(aes(shape = Transplant))+
+  geom_line(aes(group = `Plug ID`), alpha = 0.5) +
+  facet_wrap(~Transplant, axis.labels = )+
+  labs(title = "Blades NAs")+
   theme_bw()
+
+na / zero
+
+blay$day <- brewers_weekly$Date - brewers_weekly$Date[1]
 
 ```
 

@@ -11,6 +11,7 @@ library(tidyverse)
 library(readxl)
 library(sjPlot)
 library(performance)
+library(ggeffects)
 
 ```
 
@@ -21,7 +22,7 @@ weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "
 weekly$Date <- as.Date(weekly$Date)
 
 # Selecting the first week and last week of data collection
-before_after <- weekly%>% 
+before__after <- weekly%>% 
   filter(Date %in% c("2026-02-28", "2026-04-18"))
 
 # Extracting the width, length, height one time measurements
@@ -33,8 +34,12 @@ brewers_weekly<- weekly %>%
   left_join(onetime, by = "Plot ID") %>% 
   select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
 
+brewers_weekly <- brewers_weekly %>%
+  rename("Hedging.Type" = "Hedging Type",
+         "Meets.Hedge" = "Meets Hedge")
+
 # Joining one time data wiht only data the first week and last week and selcting columns
-brewers <- before_after %>%
+brewers <- before__after %>%
   left_join(onetime, by = "Plot ID") %>% 
   select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
 
@@ -132,23 +137,33 @@ check_overdispersion(growthOmodel)
 
 
 ```
-
+No significant results 
 ## Graphing
 ```{r}
-
+## Hedging Proportion over time
 prop_weekly <- brewers_weekly %>% 
   group_by(Date, `Hedging Type`) %>% 
   summarize(
     prop_meets = mean(`Meets Hedge`)
-  )
-
-ggplot(prop_weekly, aes(Date, prop_meets)) +
-  geom_bar(stat = "identity", position = position_dodge(), color = `Hedging Type`)
+  ) %>% 
+  filter(Date >= as.Date("2026-02-28") &
+         Date <= as.Date("2026-04-18"))
+  
+## Hedging Proportion over time
+ggplot(prop_weekly, aes(factor(Date), prop_meets, fill = `Hedging Type`)) +
+  geom_bar(stat = "identity", position = "stack")+
+  scale_x_discrete(labels = function(x) format(as.Date(x), "%m/%d/%y"))+
+  xlab("Date")+
+  ylab("Proportion of Hedging Types where H. stipulacea Meets the Hedge")+
+  scale_fill_discrete(labels = c(
+    "B" = "Bottles",
+    "C" = "Control",
+    "G" = "Glass",
+    "M" = "Coral & Mesh",
+    "R" = "Coral Rubble"
+  ))
 
 ```
-No significant results 
-using a propotional stacked bar plot (the proportion that met the hedge)
-p(Hedge) y time on x color by hedge 
 
 ## Including time
 ```{r}
@@ -157,31 +172,112 @@ p(Hedge) y time on x color by hedge
 # Calulating the days since the start of the data collection
 brewers_weekly$day <- brewers_weekly$Date - brewers_weekly$Date[1]
 # number of days since starting is now the response variable
-
+brewers_weekly$day <- as.numeric(brewers_weekly$day)
+  
 ## Meets Hedge with time
-meetsmodeltime <- glm(`Meets Hedge` ~ `Hedging Type` + day, family = "binomial", data = brewers_weekly)
+meetsmodeltime <- glm(`Meets.Hedge` ~ `Hedging.Type` + day, family = "binomial", data = brewers_weekly)
 summary(meetsmodeltime)
 
 check_model(meetsmodeltime)
 check_overdispersion(meetsmodel)
 
-### TO DO
-#ggpredict to plot the fitted line on the time 
-#as.numeric the day column in data frame
+# predgraph <- function(df, title){
+# ggplot({{df}}, aes(x = x, y = predicted, color = group)) +
+#   geom_line(size = 1) +
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+#               alpha = 0.2, color = NA) +
+#   labs(x = "Day",
+#        y = {{title}},
+#        color = "Hedging.Type",
+#        fill = "Hedging.Type") +
+#   scale_fill_discrete(labels = c(
+#     "B" = "Bottles",
+#     "C" = "Control",
+#     "G" = "Glass",
+#     "M" = "Coral & Mesh",
+#     "R" = "Coral Rubble"
+#   ))+
+#   theme_minimal()
+# }
+# 
+# predgraph(pred_m, "pted")
+
+pred_m <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
+
+ggplot(pred_m, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+  labs(x = "Day",
+       y = "Predicted Probability of Meeting Hedge",
+       color = "Hedging Type") +
+  scale_color_discrete(labels = c(
+    "B" = "Bottles",
+    "C" = "Control",
+    "G" = "Glass",
+    "M" = "Coral & Mesh",
+    "R" = "Coral Rubble"
+  )) +
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()
+
+#shows at what day does the H. stipulacea meet the hedge
 
 ## Growth Over with time
-gOmodeltime <- glm(`Grwth/O` ~ `Hedging Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+gOmodeltime <- glm(`Grwth/O` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
 summary(gOmodeltime)
 
 check_model(gOmodeltime)
 check_overdispersion(gOmodeltime)
 
+pred_O <- ggpredict(gOmodeltime, terms = c("day", "Hedging.Type"))
+
+ggplot(pred_O, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.2, color = NA) +
+  labs(x = "Day",
+       y = "Predicted Probability of H. stipulacea Growing Over the Hedge",
+       color = "Hedging Type") +
+  scale_color_discrete(labels = c(
+    "B" = "Bottles",
+    "C" = "Control",
+    "G" = "Glass",
+    "M" = "Coral & Mesh",
+    "R" = "Coral Rubble"
+  )) +
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()
+
+#shows at what day does the H. stipulacea Grow Over the hedge
+
 ## Growth Under with time
-gUmodeltime <- glm(`Grwth/U` ~ `Hedging Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
 summary(gUmodeltime)
 
 check_model(gUmodeltime)
 check_overdispersion(gUmodeltime)
+
+pred_U <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
+
+ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+  labs(x = "Day",
+       y = "Predicted Probability of H. stipulacea Growing Under the Hedge",
+       color = "Hedging Type") +
+  scale_color_discrete(labels = c(
+    "B" = "Bottles",
+    "C" = "Control",
+    "G" = "Glass",
+    "M" = "Coral & Mesh",
+    "R" = "Coral Rubble"
+  )) +
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()
+
+#shows at what day does the H. stipulacea Grow Under the hedge
 ```
  the seagrass changing through time 
  even in this short time we are seeing a significant effect of day 
