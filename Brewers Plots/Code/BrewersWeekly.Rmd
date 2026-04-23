@@ -138,30 +138,44 @@ check_overdispersion(growthOmodel)
 
 ```
 No significant results 
+
 ## Graphing
 ```{r}
 ## Hedging Proportion over time
 prop_weekly <- brewers_weekly %>% 
-  group_by(Date, `Hedging Type`) %>% 
+  group_by(Date, `Hedging.Type`) %>% 
   summarize(
-    prop_meets = mean(`Meets Hedge`)
+    prop_meets = mean(`Meets.Hedge`)
   ) %>% 
   filter(Date >= as.Date("2026-02-28") &
          Date <= as.Date("2026-04-18"))
+prop_weekly$prop <- (prop_weekly$prop_meets * 3)/15
   
-## Hedging Proportion over time
-ggplot(prop_weekly, aes(factor(Date), prop_meets, fill = `Hedging Type`)) +
+#***Hedging Proportion over time***
+ggplot(prop_weekly, aes(factor(Date), prop, fill = `Hedging.Type`)) +
   geom_bar(stat = "identity", position = "stack")+
   scale_x_discrete(labels = function(x) format(as.Date(x), "%m/%d/%y"))+
   xlab("Date")+
-  ylab("Proportion of Hedging Types where H. stipulacea Meets the Hedge")+
-  scale_fill_discrete(labels = c(
+  ylim(0, 1)+
+  ylab(expression(paste("Proportion of Plots where ", italic("H. stipulacea"), " Meets the Hedge")))+
+  theme_bw()+
+  scale_fill_discrete(name = "Hedging Type", labels = c(
     "B" = "Bottles",
     "C" = "Control",
     "G" = "Glass",
     "M" = "Coral & Mesh",
     "R" = "Coral Rubble"
-  ))
+  ))+
+    theme(
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 13),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 17),
+    strip.text = element_text(size = 17)
+  )
+
+
+## total = total number of plot availabe 15 
 
 ```
 
@@ -202,15 +216,18 @@ check_overdispersion(meetsmodel)
 # 
 # predgraph(pred_m, "pted")
 
+#***meeting hedge prob***
 pred_m <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
 
-ggplot(pred_m, aes(x = x, y = predicted, color = group)) +
+ggplot(data = pred_m, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
-  labs(x = "Day",
-       y = "Predicted Probability of Meeting Hedge",
-       color = "Hedging Type") +
+  labs(color = "Hedging Type") +
+  ylab(expression(paste("Predicted Probability of ", italic("H. stipulacea"), " Meeting the Hedge")))+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   scale_color_discrete(labels = c(
     "B" = "Bottles",
     "C" = "Control",
@@ -219,7 +236,15 @@ ggplot(pred_m, aes(x = x, y = predicted, color = group)) +
     "R" = "Coral Rubble"
   )) +
   scale_fill_discrete(guide = "none") +
-  theme_minimal()
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 17),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
 
 #shows at what day does the H. stipulacea meet the hedge
 
@@ -232,13 +257,16 @@ check_overdispersion(gOmodeltime)
 
 pred_O <- ggpredict(gOmodeltime, terms = c("day", "Hedging.Type"))
 
-ggplot(pred_O, aes(x = x, y = predicted, color = group, fill = group)) +
-  geom_line(linewidth = 1) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+#***growth over prob***
+ggplot(pred_O, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
-  labs(x = "Day",
-       y = "Predicted Probability of H. stipulacea Growing Over the Hedge",
-       color = "Hedging Type") +
+  labs(color = "Hedging Type") +
+  ylab(expression(paste("Predicted Probability of ", italic("H. stipulacea"), " Growing Over the Hedge")))+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   scale_color_discrete(labels = c(
     "B" = "Bottles",
     "C" = "Control",
@@ -247,12 +275,23 @@ ggplot(pred_O, aes(x = x, y = predicted, color = group, fill = group)) +
     "R" = "Coral Rubble"
   )) +
   scale_fill_discrete(guide = "none") +
-  theme_minimal()
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 17),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
 
 #shows at what day does the H. stipulacea Grow Over the hedge
 
+coralremove <- brewers_weekly %>% 
+  filter(Hedging.Type != "M" & Hedging.Type != "R")
+
 ## Growth Under with time
-gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = coralremove)
 summary(gUmodeltime)
 
 check_model(gUmodeltime)
@@ -260,22 +299,36 @@ check_overdispersion(gUmodeltime)
 
 pred_U <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
 
+#***growth Under prob***
 ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1) +
+  geom_jitter(data = coralremove, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
-  labs(x = "Day",
-       y = "Predicted Probability of H. stipulacea Growing Under the Hedge",
-       color = "Hedging Type") +
-  scale_color_discrete(labels = c(
+  scale_color_manual(values = c(
+    "C" = "#F8766D",
+    "B" = "#00B0F6",
+    "G" = "#E76BF3"), 
+    labels = c(
     "B" = "Bottles",
     "C" = "Control",
-    "G" = "Glass",
-    "M" = "Coral & Mesh",
-    "R" = "Coral Rubble"
+    "G" = "Glass"
   )) +
+  labs(color = "Hedging Type") +
+  ylab(expression(paste("Predicted Probability of ", italic("H. stipulacea"), " Growing Under the Hedge")))+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   scale_fill_discrete(guide = "none") +
-  theme_minimal()
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 17),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
+#did not observe growth so not included in model as it violated the assump of homogeneity of variance 
 
 #shows at what day does the H. stipulacea Grow Under the hedge
 ```

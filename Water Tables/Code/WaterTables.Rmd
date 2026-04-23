@@ -13,7 +13,7 @@ library(patchwork)
 ```
 
 ## Data Wrangling
-```{r cars}
+```{r}
 ## For Shoot Count
 tables_weekly <- read_xlsx("Water Tables/DataFiles/watertables_4_22_updated_Capstone Data.xlsx", sheet = "Cleaned Water tables")
 tables_weekly$Date <- as.Date(tables_weekly$Date)
@@ -125,25 +125,165 @@ b <- graph(blades_0s_clean, weekly_growth_B, "Blades 0s")
 c <- graph(blades_0s_clean, weekly_growth_C, "Blades 0s")
 a/b/c
 
+#Weekly Growth rate over time NAs
 an <- graph(blades_NAs_clean, weekly_growth_A, "Blades NAs")
 bn <- graph(blades_NAs_clean, weekly_growth_B, "Blades NAs")
 cn <- graph(blades_NAs_clean, weekly_growth_C, "Blades NAs")
 an/bn/cn
 
-(a/b/c) + (an/bn/cn)
+#Raw Blade Length 
+long <- blades_0s_clean %>% 
+  pivot_longer(
+    names_to = "Blade",
+    values_to = "value",
+    cols = c("Blade length A (cm)", "Blade length B (cm)", "Blade length C (cm)")
+  ) %>% 
+  rename(Plugid = `Plug ID`)
 
-#Weekly Growth rate over time NAs
-na <- ggplot(blades_NAs_clean, aes(Date, weekly_growth, color = `Plug ID`))+
-  geom_point(aes(shape = Transplant))+
-  geom_line(aes(group = `Plug ID`), alpha = 0.5) +
-  facet_wrap(~Transplant, axis.labels = )+
-  labs(title = "Blades NAs")+
-  theme_bw()
 
-na / zero
+  
 
-blay$day <- brewers_weekly$Date - brewers_weekly$Date[1]
 
+# A <- ggplot(blades_0s_clean, aes(Date, `Blade length A (cm)`, color = Transplant, group = `Plug ID`))+
+#   geom_point()+
+#   geom_line()+
+#   facet_wrap(~Transplant)
+# 
+# B <- ggplot(blades_0s_clean, aes(Date, `Blade length B (cm)`, color = Transplant, group = `Plug ID`))+
+#   geom_point()+
+#   geom_line()+
+#   facet_wrap(~Transplant)
+# 
+# C <- ggplot(blades_0s_clean, aes(Date, `Blade length C (cm)`, color = Transplant, group = `Plug ID`))+
+#   geom_point()+
+#   geom_line()+
+#   geom_hline(yintercept = 15)+
+#   facet_wrap(~Transplant)
+# A/B/C
+# 
+# A <- ggplot(blades_NAs_clean, aes(Date, `Blade length A (cm)`, color = Transplant, group = `Plug ID`))+
+#   geom_point()+
+#   geom_line()+
+#   facet_wrap(~Transplant)
+# 
+# B <- ggplot(blades_NAs_clean, aes(Date, `Blade length B (cm)`, color = Transplant, group = `Plug ID`))+
+#   geom_point()+
+#   geom_line()+
+#   facet_wrap(~Transplant)
+# 
+# C <- ggplot(blades_NAs_clean, aes(Date, `Blade length C (cm)`, color = Transplant, group = `Plug ID`))+
+#   geom_point()+
+#   geom_line()+
+#   geom_hline(yintercept = 15)+
+#   facet_wrap(~Transplant)
+# A/B/C
+
+
+
+
+
+
+# calculate avg blade length exclusive of zeros 
+# calc avg growth rate between time points 
+# plot point with mean and confidence interval
+# x axis labels (range of dates)
+
+long_NA <- blades_NAs_clean %>% 
+  pivot_longer(
+    names_to = "Blade",
+    values_to = "value",
+    cols = c("Blade length A (cm)", "Blade length B (cm)", "Blade length C (cm)")
+  )
+
+avgblade <- long_NA %>% 
+  group_by(Date, Transplant) %>% # Average blade length by transplant 
+  summarize(
+    avg_length = mean(value, na.rm = TRUE),
+    sd_ = sd(value, na.rm = TRUE),
+    SEM_ = sd(value, na.rm = TRUE),
+    CI_low = avg_length - 1.96*SEM_, 
+    CI_high = avg_length + 1.96*SEM_
+  )
+
+d <- ggplot(avgblade, aes(Date, avg_length))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Transplant,labeller = labeller(
+    Transplant = c(
+      "B" = "Bucket",
+      "PB" = "Pot and Bag",
+      "PP" = "Peat Pot")))+
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_high),
+                width = .2,
+                position = position_dodge(.9))+
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 30))
+  
+avgblade$weekly_growthrate <- ave(avgblade$avg_length, avgblade$Transplant, FUN = function(x) c(NA, diff(x)))
+
+avgblade$CI_l <- avgblade$weekly_growthrate - 1.96*sd(avgblade$weekly_growthrate, na.rm = TRUE) 
+avgblade$CI_h <- avgblade$weekly_growthrate + 1.96*sd(avgblade$weekly_growthrate, na.rm = TRUE) 
+
+avgblade <- avgblade %>% 
+  filter(Date >= as.Date("2026-03-07") &
+         Date <= as.Date("2026-04-18"))
+
+f<-ggplot(avgblade, aes(Date, weekly_growthrate, color = Transplant))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Transplant,labeller = labeller(
+    Transplant = c(
+      "B" = "Bucket",
+      "PB" = "Pot and Bag",
+      "PP" = "Peat Pot")))+
+  geom_errorbar(aes(ymin = CI_l, ymax = CI_h),
+                width = .2,
+                position = position_dodge(.9))+
+    scale_x_date(
+    breaks = unique(avgblade$Date),  # tick at EVERY point
+    labels = function(x) {
+      week_num <- as.integer((as.Date(x) - min(avgblade$Date)) / 7) + 1
+      paste("week", week_num, "to week", week_num + 1)
+    })+
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 30))
+#change to cm/day by dividing by 7
+d/f
+
+# with 3 plugs
+avgblade_plug <- long_NA %>% 
+  group_by(Date, Transplant, `Plug ID`) %>% # Average blade length by transplant 
+  summarize(
+    avg_length = mean(value, na.rm = TRUE),
+    sd_ = sd(value, na.rm = TRUE),
+    SEM_ = sd(value, na.rm = TRUE),
+    CI_low = avg_length - 1.96*SEM_, 
+    CI_high = avg_length + 1.96*SEM_
+  )
+
+avgblade_plug$weekly_growthrate <- ave(avgblade_plug$avg_length, avgblade_plug$Transplant, FUN = function(x) c(NA, diff(x)))
+
+avgblade_plug$CI_l <- avgblade_plug$weekly_growthrate - 1.96*sd(avgblade_plug$weekly_growthrate, na.rm = TRUE) 
+avgblade_plug$CI_h <- avgblade_plug$weekly_growthrate + 1.96*sd(avgblade_plug$weekly_growthrate, na.rm = TRUE) 
+
+avgblade_plug <- avgblade_plug %>% 
+  filter(Date >= as.Date("2026-03-07") &
+         Date <= as.Date("2026-04-18"))
+
+ggplot(avgblade_plug, aes(Date, weekly_growthrate, color = Transplant, group = `Plug ID`))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Transplant,labeller = labeller(
+    Transplant = c(
+      "B" = "Bucket",
+      "PB" = "Pot and Bag",
+      "PP" = "Peat Pot")))+
+  geom_errorbar(aes(ymin = CI_l, ymax = CI_h),
+                width = .2,
+                position = position_dodge(.9))+
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 30))
+f
 ```
 
 ### Stats
@@ -196,15 +336,81 @@ Blade Length:
 
 ## Graphing
 ```{r}
-## Shoot count Water Table Plot - NEEDS TO BE cleaned up aestetically 
-ggplot(clean_tables, aes(Date, `Shoot count`, color = paste(clean_tables$Transplant, clean_tables$plot)) ) +
-  geom_point(aes(shape = Transplant))+
-  geom_line(aes(group = paste(clean_tables$Transplant, clean_tables$plot)), alpha = 0.5) +
-  facet_wrap(~Transplant, axis.labels = )+
-  theme_bw()
+#***Shoot Count by date***
+ggplot(clean_tables, aes(Date, `Shoot count`, color = Transplant)) +
+  geom_point(aes(shape = factor(plot))) +
+  geom_line(aes(group = interaction(Transplant, plot)), alpha = 0.5) +
+  scale_color_discrete(guide = "none") +
+  scale_color_manual(values = c(
+    "B" = "dodgerblue",
+    "PB" = "gray42",
+    "PP" = "darkgreen"), guide = "none") +
+  facet_wrap(~Transplant, labeller = labeller(
+    Transplant = c(
+      "B" = "Bucket",
+      "PB" = "Pot and Bag",
+      "PP" = "Peat Pot"
+    )
+  )) +
+  scale_shape_discrete(name = "Plug ID", labels = c(
+    "1" = "Plug 1",
+    "2" = "Plug 2",
+    "3" = "Plug 3"
+  )) +
+  ylab("Shoot Count")+
+  scale_x_date(breaks = unique(clean_tables$Date),
+               date_labels = "%m/%d") +
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 18, size = 12),
+    axis.text.y = element_text(size = 13),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 17),
+    strip.text = element_text(size = 17)
+  )
 
-## Boxplot of shoot count with sigmificance
-# ?? does this need to be the mean with sem?
+
+#***Raw data blade length through time *** change the points to x for dead 
+ggplot(long, aes(Date, value, color = Transplant, group = paste(long$Blade, long$Plugid)))+
+  geom_line(aes(color = Transplant)) +
+  geom_point(aes(color = Transplant)) +
+  scale_color_manual(values = c(
+    "B" = "dodgerblue",
+    "PB" = "gray42",
+    "PP" = "darkgreen"
+  )) +
+  geom_point(data = subset(long, value == 0), aes(Date, value), color = "white", size = 2, inherit.aes = FALSE) +
+  geom_line(data = subset(long, value == 0), aes(Date, value), color = "white", inherit.aes = FALSE) +
+  geom_point(data = subset(long, value == 0),aes(Date, value),
+    shape = 4,color = "red", size = 3,inherit.aes = FALSE, alpha = 0.5) +
+  geom_line(data = subset(long, value == 0), aes(Date, value), color = "red", inherit.aes = FALSE, alpha = 0.5) +
+  facet_wrap(~Transplant, labeller = labeller(
+    Transplant = c(
+      "B" = "Bucket",
+      "PB" = "Pot and Bag",
+      "PP" = "Peat Pot")))+
+  ylab("Blade Length")+
+  scale_x_date(
+    limits = as.Date(c("2026-02-28", NA)),
+    breaks = seq(as.Date("2026-02-28"), by = "1 week", length.out = 12), date_labels = "%m/%d")+
+  theme_bw()+
+  theme(
+    axis.text.x = element_text(angle = 17, size = 13),
+    legend.position = "none",
+    axis.text.y = element_text(size = 13),
+    axis.title.x = element_text(size = 17),
+    axis.title.y = element_text(size = 17),
+    strip.text = element_text(size = 17)
+  )
+
+```
+
+## extra
+```{r}
+## Boxplot of shoot count with significance
+# ?? does this need to be the mean with confidence interval?
+# with all data: pseudoreplication 
+
 pvals <- summary(shoot_pois)$coefficients[,4]
 stars <- cut(pvals,
              breaks = c(-Inf, 0.001, 0.01, 0.05, Inf),
