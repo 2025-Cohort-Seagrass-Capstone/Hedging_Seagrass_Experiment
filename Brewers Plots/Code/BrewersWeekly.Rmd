@@ -171,7 +171,9 @@ ggplot(prop_weekly, aes(factor(Date), prop, fill = `Hedging.Type`)) +
     axis.text.y = element_text(size = 13),
     axis.title.x = element_text(size = 17),
     axis.title.y = element_text(size = 17),
-    strip.text = element_text(size = 17)
+    strip.text = element_text(size = 17),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
   )
 
 
