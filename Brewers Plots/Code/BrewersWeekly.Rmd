@@ -157,7 +157,7 @@ ggplot(prop_weekly, aes(factor(Date), prop, fill = `Hedging.Type`)) +
   scale_x_discrete(labels = function(x) format(as.Date(x), "%m/%d/%y"))+
   xlab("Date")+
   ylim(0, 1)+
-  ylab(expression(paste("Proportion of Plots where ", italic("H. stipulacea"), " Meets the Hedge")))+
+  ylab(expression(paste(italic("H. stipulacea"), " at hedge (%)")))+
   theme_bw()+
   scale_fill_discrete(name = "Hedging Type", labels = c(
     "B" = "Bottles",
@@ -228,7 +228,7 @@ ggplot(data = pred_m, aes(x = x, y = predicted, color = group)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
   labs(color = "Hedging Type") +
-  ylab(expression(paste("Predicted Probability of ", italic("H. stipulacea"), " Meeting the Hedge")))+
+  ylab(expression(paste("P(", italic("H. stipulacea"), " Meeting Hedge)")))+
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   scale_color_discrete(labels = c(
     "B" = "Bottles",
@@ -267,7 +267,7 @@ ggplot(pred_O, aes(x = x, y = predicted, color = group)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
   labs(color = "Hedging Type") +
-  ylab(expression(paste("Predicted Probability of ", italic("H. stipulacea"), " Growing Over the Hedge")))+
+  ylab(expression(paste("P(", italic("H. stipulacea"), " Growing Over the Hedge)")))+
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   scale_color_discrete(labels = c(
     "B" = "Bottles",
@@ -318,7 +318,7 @@ ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
     "G" = "Glass"
   )) +
   labs(color = "Hedging Type") +
-  ylab(expression(paste("Predicted Probability of ", italic("H. stipulacea"), " Growing Under the Hedge")))+
+  ylab(expression(paste("P(", italic("H. stipulacea"), " Growing Under the Hedge)")))+
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   scale_fill_discrete(guide = "none") +
   theme_minimal()+
