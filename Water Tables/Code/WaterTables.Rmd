@@ -337,7 +337,13 @@ Blade Length:
 ## Graphing
 ```{r}
 #***Shoot Count by date***
-ggplot(clean_tables, aes(Date, `Shoot count`, color = Transplant)) +
+
+# Calulating the days since the start of the data collection
+clean_tables$day <- clean_tables$Date - clean_tables$Date[1]
+# number of days since starting is now the response variable
+clean_tables$day <- as.numeric(clean_tables$day)
+  
+ggplot(clean_tables, aes(day, `Shoot count`, color = Transplant)) +
   geom_point(aes(shape = factor(plot))) +
   geom_line(aes(group = interaction(Transplant, plot)), alpha = 0.5) +
   scale_color_discrete(guide = "none") +
@@ -352,26 +358,31 @@ ggplot(clean_tables, aes(Date, `Shoot count`, color = Transplant)) +
       "PP" = "Peat Pot"
     )
   )) +
-  scale_shape_discrete(name = "Plug ID", labels = c(
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_shape_discrete(name = "Plug Number", labels = c(
     "1" = "Plug 1",
     "2" = "Plug 2",
     "3" = "Plug 3"
   )) +
   ylab("Shoot Count")+
-  scale_x_date(breaks = unique(clean_tables$Date),
-               date_labels = "%m/%d") +
   theme_bw()+
   theme(
-    axis.text.x = element_text(angle = 18, size = 12),
-    axis.text.y = element_text(size = 13),
-    axis.title.x = element_text(size = 17),
-    axis.title.y = element_text(size = 17),
-    strip.text = element_text(size = 17)
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22),
+    strip.text = element_text(size = 22)
   )
 
 
 #***Raw data blade length through time *** change the points to x for dead 
-ggplot(long, aes(Date, value, color = Transplant, group = paste(long$Blade, long$Plugid)))+
+long$day <- long$Date - long$Date[1]
+# number of days since starting is now the response variable
+long$day <- as.numeric(difftime(long$Date, long$Date[1], units = "days"))
+
+ggplot(long, aes(day, value, color = Transplant, group = paste(long$Blade, long$Plugid)))+
   geom_line(aes(color = Transplant)) +
   geom_point(aes(color = Transplant)) +
   scale_color_manual(values = c(
@@ -379,28 +390,31 @@ ggplot(long, aes(Date, value, color = Transplant, group = paste(long$Blade, long
     "PB" = "gray42",
     "PP" = "darkgreen"
   )) +
-  geom_point(data = subset(long, value == 0), aes(Date, value), color = "white", size = 2, inherit.aes = FALSE) +
-  geom_line(data = subset(long, value == 0), aes(Date, value), color = "white", inherit.aes = FALSE) +
-  geom_point(data = subset(long, value == 0),aes(Date, value),
+  geom_point(data = subset(long, value == 0), aes(day, value), color = "white", size = 2, inherit.aes = FALSE) +
+  geom_line(data = subset(long, value == 0), aes(day, value), color = "white", inherit.aes = FALSE) +
+  geom_point(data = subset(long, value == 0),aes(day, value),
     shape = 4,color = "red", size = 3,inherit.aes = FALSE, alpha = 0.5) +
-  geom_line(data = subset(long, value == 0), aes(Date, value), color = "red", inherit.aes = FALSE, alpha = 0.5) +
+  geom_line(data = subset(long, value == 0), aes(day, value), color = "red", inherit.aes = FALSE, alpha = 0.5) +
   facet_wrap(~Transplant, labeller = labeller(
     Transplant = c(
       "B" = "Bucket",
       "PB" = "Pot and Bag",
       "PP" = "Peat Pot")))+
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = 16.5, ymax = Inf,
+           fill = "grey1",
+           alpha = 0.3)+
   ylab("Blade Length")+
-  scale_x_date(
-    limits = as.Date(c("2026-02-28", NA)),
-    breaks = seq(as.Date("2026-02-28"), by = "1 week", length.out = 12), date_labels = "%m/%d")+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   theme_bw()+
   theme(
-    axis.text.x = element_text(angle = 17, size = 13),
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25),
     legend.position = "none",
-    axis.text.y = element_text(size = 13),
-    axis.title.x = element_text(size = 17),
-    axis.title.y = element_text(size = 17),
-    strip.text = element_text(size = 17)
+    strip.text = element_text(size = 22)
   )
 
 ```
