@@ -3,6 +3,8 @@ title: "Weekly Monitoring"
 author: "Savanna Saunders"
 date: "2026-04-08"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Libraries
@@ -19,7 +21,7 @@ library(patchwork)
 ## Data Wranging
 ```{r Data Wrangling}
 # Data across all weeks
-weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly <- read_xlsx("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "Weekly Brewers Bay monitoring")
 weekly$Date <- as.Date(weekly$Date)
 
 # Selecting the first week and last week of data collection
@@ -27,7 +29,7 @@ before__after <- weekly%>%
   filter(Date %in% c("2026-02-28", "2026-04-18"))
 
 # Extracting the width, length, height one time measurements
-onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "One Time Measurements") %>% 
+onetime <- read_xlsx("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date)
 
 # Joining one time data across all weeks and selecting columns
@@ -49,6 +51,16 @@ brewers$`Hedging Type`[brewers$`Hedging Type` == "B"] <- "W"
 # Finding total volume of the hedge (how much space did it take up)
 brewers$totalvolumne_m3 <- 
   ((brewers$`N Length (cm)` *  brewers$`N Height (cm)` *  brewers$`N Width (cm)`) + (brewers$`E Length (cm)` *  brewers$`E Height (cm)` *  brewers$`E Width (cm)`) + (brewers$`S Length (cm)` *  brewers$`S Height (cm)` *  brewers$`S Width (cm)`) + (brewers$`W Length (cm)` *  brewers$`W Height (cm)` *  brewers$`W Width (cm)`)) / 1000000
+
+brewers_weekly <- brewers_weekly %>% 
+  mutate(
+    Hedging.Type=recode(Hedging.Type,
+                         "W" = "WB",
+    "Control" = "C",
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR")
+   )
 
 ```
 
@@ -211,7 +223,7 @@ meetsmodeltime <- glm(`Meets.Hedge` ~ `Hedging.Type` + day, family = "binomial",
 summary(meetsmodeltime)
 
 check_model(meetsmodeltime)
-check_overdispersion(meetsmodel)
+check_overdispersion(meetsmodeltime)
 
 # predgraph <- function(df, title){
 # ggplot({{df}}, aes(x = x, y = predicted, color = group)) +
@@ -265,7 +277,7 @@ m <- ggplot(data = pred_m, aes(x = x, y = predicted, color = group)) +
   )
 
 #shows at what day does the H. stipulacea meet the hedge
-
+m
 
 ## Growth Over with time
 gOmodeltime <- glm(`Grwth/O` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
@@ -303,14 +315,21 @@ o <- ggplot(pred_O, aes(x = x, y = predicted, color = group)) +
     legend.text = element_text(size = 18),
     legend.title = element_text(size = 22)
   )
-
+o
 #shows at what day does the H. stipulacea Grow Over the hedge
 
-coralremove <- brewers_weekly %>% 
-  filter(Hedging.Type != "M" & Hedging.Type != "R")
+## Growth Under with time (without removal)
+gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+summary(gUmodeltime)
 
-## Growth Under with time
-gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = coralremove)
+check_model(gUmodeltime)
+check_overdispersion(gUmodeltime)
+
+# coralremove <- brewers_weekly %>% 
+#   filter(Hedging.Type != "M" & Hedging.Type != "R")
+
+## Growth Under with time (without removal)
+gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
 summary(gUmodeltime)
 
 check_model(gUmodeltime)
@@ -321,18 +340,16 @@ pred_U <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
 #***growth Under prob***
 u <- ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1) +
-  geom_jitter(data = coralremove, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
               alpha = 0.4, width = 0.7, height = 0.01) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
-  scale_color_manual(values = c(
-    "C" = "#F8766D",
-    "B" = "#00B0F6",
-    "G" = "#E76BF3"), 
-    labels = c(
+  scale_color_discrete(labels = c(
     "W" = "WB",
     "C" = "Control",
-    "G" = "GB"
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR"
   )) +
   labs(color = "Hedging Type") +
   ylab(expression(paste("P(", italic("H. stipulacea"), " Growing Under the Hedge)")))+
@@ -347,6 +364,7 @@ u <- ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
     legend.text = element_text(size = 18),
     legend.title = element_text(size = 22)
   )
+u
 #did not observe growth so not included in model as it violated the assump of homogeneity of variance 
 
 #shows at what day does the H. stipulacea Grow Under the hedge
