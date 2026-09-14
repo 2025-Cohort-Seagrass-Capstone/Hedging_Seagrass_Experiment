@@ -1,0 +1,189 @@
+---
+title: "Weekly Monitoring with summer data"
+author: "Savanna Saunders & Adam Krogmann"
+date: "2026-09-14"
+output: html_document
+---
+
+## Libraries
+```{r import libraries}
+library(tidyverse)
+library(readxl)
+library(sjPlot)
+library(performance)
+library(ggeffects)
+library(patchwork)
+
+```
+
+## Data Wranging
+```{r Data Wrangling}
+# Data across all weeks
+weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_9_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly$Date <- as.Date(weekly$Date)
+
+# Extracting the width, length, height one time measurements
+onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_9_14.xlsx", sheet = "One Time Measurements") %>% 
+  select(-Date)
+
+# Joining one time data across all weeks and selecting columns
+brewers_weekly<- weekly %>%
+  left_join(onetime, by = "Plot ID") %>% 
+  select("Date", "Plot ID":"Grwth/O", "Hedging Type", "N Length (cm)":"W Width (cm)") 
+
+brewers_weekly <- brewers_weekly %>%
+  rename("Hedging.Type" = "Hedging Type",
+         "Meets.Hedge" = "Meets Hedge")
+brewers_weekly$Hedging.Type[brewers_weekly$Hedging.Type == "B"] <- "W"
+
+```
+
+## Data Visualization
+```{r}
+## Weekly plot
+ggplot(brewers_weekly) +
+  geom_jitter(aes(x = Date, y = `Meets.Hedge`, color = as.factor(`Hedging.Type`)),
+              alpha = 0.4, width = 0, height = 0.01) +
+  scale_y_continuous(breaks = c(0,1)) +
+  theme_bw()
+
+```
+
+## Including time
+```{r}
+# predicting the day at which the seagrass meets the head (like octopus example)
+
+# Calulating the days since the start of the data collection
+brewers_weekly$day <- brewers_weekly$Date - brewers_weekly$Date[1]
+# number of days since starting is now the response variable
+brewers_weekly$day <- as.numeric(brewers_weekly$day)
+  
+## Meets Hedge with time
+meetsmodeltime <- glm(`Meets.Hedge` ~ `Hedging.Type` + day, family = "binomial", data = brewers_weekly)
+summary(meetsmodeltime)
+
+check_model(meetsmodeltime)
+check_overdispersion(meetsmodeltime)
+
+#***meeting hedge prob***
+pred_m <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
+
+m <- ggplot(data = pred_m, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+  labs(color = "Hedging Type") +
+  ylab(expression(paste("P(Meeting the Hedge)")))+
+  # xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_color_discrete(labels = c(
+    "W" = "WB",
+    "C" = "Control",
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR"
+  )) +
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22)
+  )
+m
+#shows at what day does the H. stipulacea meet the hedge
+
+brewers_weekly$`Grwth/O`<- as.integer(brewers_weekly$`Grwth/O`)
+
+## Growth Over with time
+gOmodeltime <- glm(`Grwth/O` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+summary(gOmodeltime)
+
+check_model(gOmodeltime)
+check_overdispersion(gOmodeltime)
+
+pred_O <- ggpredict(gOmodeltime, terms = c("day", "Hedging.Type"))
+
+#***growth over prob***
+o <- ggplot(pred_O, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+  labs(color = "Hedging Type") +
+  ylab(expression(paste("P(Over the Hedge)")))+
+  # xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_color_discrete(labels = c(
+    "W" = "WB",
+    "C" = "Control",
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR"
+  )) +
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22)
+  )
+o
+#shows at what day does the H. stipulacea Grow Over the hedge
+
+## Growth Under with time
+gUmodeltime <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
+summary(gUmodeltime)
+
+check_model(gUmodeltime)
+check_overdispersion(gUmodeltime)
+
+pred_U <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
+
+#***growth Under prob***
+u <- ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+scale_color_discrete(labels = c(
+    "W" = "WB",
+    "C" = "Control",
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR"
+  )) +
+  labs(color = "Hedging Type") +
+  ylab(expression(paste("P(Under the Hedge)")))+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22)
+  )
+u
+
+#shows at what day does the H. stipulacea Grow Under the hedge
+
+##***one figure Panel***
+
+combined_plot <- m / o / u
+combined_plot
+ggsave("Brewers Plots/Figures/combined_probability.png", plot = combined_plot, dpi = 300, width = 8,height = 12,units = "in") 
+
+```
+ the seagrass changing through time 
+ even in this short time we are seeing a significant effect of day 
