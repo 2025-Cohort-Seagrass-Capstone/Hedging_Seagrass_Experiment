@@ -39,14 +39,74 @@ brewers_weekly$Hedging.Type[brewers_weekly$Hedging.Type == "B"] <- "W"
 
 ```
 
+```{r}
+prob_graph <- function(pred, yvalJitter, tag, ylab){
+    graph <- ggplot({{pred}}, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly, aes(x = day, y = {{yvalJitter}}, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+scale_color_discrete(labels = c(
+    "W" = "WB",
+    "C" = "Control",
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR"
+  )) +
+  labs(color = "Hedging Type", tag = tag) +
+  ylab(ylab)+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22),
+    plot.tag = element_text(size = 25, face = "bold"))
+    return(graph)}
+
+prob_graph_LCR <- function(pred, yvalJitter, tag, ylab){
+    graph <- ggplot({{pred}}, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1) +
+  geom_jitter(data = brewers_weekly_LCR, aes(x = day, y = {{yvalJitter}}, color = Hedging.Type),
+              alpha = 0.4, width = 0.7, height = 0.01) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, color = NA) +
+scale_color_discrete(labels = c(
+    "W" = "WB",
+    "C" = "Control",
+    "G" = "GB",
+    "M" = "SCR",
+    "R" = "LCR"
+  )) +
+  labs(color = "Hedging Type", tag = tag) +
+  ylab(ylab)+
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_fill_discrete(guide = "none") +
+  theme_minimal()+
+    theme(
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22),
+    plot.tag = element_text(size = 25, face = "bold"))
+    return(graph)}
+```
+
 ## Data Visualization
 ```{r}
 ## Weekly plot
-ggplot(brewers_weekly) +
-  geom_jitter(aes(x = Date, y = `Meets.Hedge`, color = as.factor(`Hedging.Type`)),
-              alpha = 0.4, width = 0, height = 0.01) +
-  scale_y_continuous(breaks = c(0,1)) +
-  theme_bw()
+# ggplot(brewers_weekly) +
+#   geom_jitter(aes(x = Date, y = `Meets.Hedge`, color = as.factor(`Hedging.Type`)),
+#               alpha = 0.4, width = 0, height = 0.01) +
+#   scale_y_continuous(breaks = c(0,1)) +
+#   theme_bw()
 
 ```
 
@@ -69,33 +129,7 @@ check_overdispersion(meetsmodeltime)
 #***meeting hedge prob***
 pred_m <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
 
-m <- ggplot(data = pred_m, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1) +
-  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
-              alpha = 0.4, width = 0.7, height = 0.01) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
-              alpha = 0.2, color = NA) +
-  labs(color = "Hedging Type") +
-  ylab(expression(paste("P(Meeting the Hedge)")))+
-  # xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
-  scale_color_discrete(labels = c(
-    "W" = "WB",
-    "C" = "Control",
-    "G" = "GB",
-    "M" = "SCR",
-    "R" = "LCR"
-  )) +
-  scale_fill_discrete(guide = "none") +
-  theme_minimal()+
-    theme(
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 25),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 22)
-  )
-m
+m <- prob_graph(pred_m, Meets.Hedge, "A", "P(Meeting the Hedge)")
 #shows at what day does the H. stipulacea meet the hedge
 
 brewers_weekly$`Grwth/O`<- as.integer(brewers_weekly$`Grwth/O`)
@@ -110,33 +144,7 @@ check_overdispersion(gOmodeltime)
 pred_O <- ggpredict(gOmodeltime, terms = c("day", "Hedging.Type"))
 
 #***growth over prob***
-o <- ggplot(pred_O, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1) +
-  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
-              alpha = 0.4, width = 0.7, height = 0.01) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
-              alpha = 0.2, color = NA) +
-  labs(color = "Hedging Type") +
-  ylab(expression(paste("P(Over the Hedge)")))+
-  # xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
-  scale_color_discrete(labels = c(
-    "W" = "WB",
-    "C" = "Control",
-    "G" = "GB",
-    "M" = "SCR",
-    "R" = "LCR"
-  )) +
-  scale_fill_discrete(guide = "none") +
-  theme_minimal()+
-    theme(
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 25),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 22)
-  )
-o
+o <- prob_graph(pred_O, `Grwth/O`, "B", "P(Over the Hedge)")
 #shows at what day does the H. stipulacea Grow Over the hedge
 
 ## Growth Under with time
@@ -149,33 +157,8 @@ check_overdispersion(gUmodeltime)
 pred_U <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
 
 #***growth Under prob***
-u <- ggplot(pred_U, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1) +
-  geom_jitter(data = brewers_weekly, aes(x = day, y = Meets.Hedge, color = Hedging.Type),
-              alpha = 0.4, width = 0.7, height = 0.01) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
-              alpha = 0.2, color = NA) +
-scale_color_discrete(labels = c(
-    "W" = "WB",
-    "C" = "Control",
-    "G" = "GB",
-    "M" = "SCR",
-    "R" = "LCR"
-  )) +
-  labs(color = "Hedging Type") +
-  ylab(expression(paste("P(Under the Hedge)")))+
-  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
-  scale_fill_discrete(guide = "none") +
-  theme_minimal()+
-    theme(
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title.x = element_text(size = 25),
-    axis.title.y = element_text(size = 25),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 22)
-  )
-u
+
+u <- prob_graph(pred_U, `Grwth/U`, "C", "P(Under the Hedge)")
 
 #shows at what day does the H. stipulacea Grow Under the hedge
 
@@ -188,3 +171,50 @@ ggsave("Brewers Plots/Figures/combined_probability.png", plot = combined_plot, d
 ```
  the seagrass changing through time 
  even in this short time we are seeing a significant effect of day 
+ 
+## LCR as baseline 
+```{r}
+brewers_weekly_LCR <- brewers_weekly |> 
+  mutate(Hedging.Type = recode(Hedging.Type, "LCR" = "aLCR"))
+
+## Meets Hedge with time
+meetsmodeltime_LCR <- glm(`Meets.Hedge` ~ `Hedging.Type` + day, family = "binomial", data = brewers_weekly_LCR)
+summary(meetsmodeltime_LCR)
+
+check_model(meetsmodeltime_LCR)
+check_overdispersion(meetsmodeltime_LCR)
+
+pred_m_LCR <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
+
+m_lcr <- prob_graph_LCR(pred_m_LCR, Meets.Hedge, "A", "P(Meeting the Hedge)")
+
+## Growth Over with time
+gOmodeltime_LCR <- glm(`Grwth/O` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly_LCR)
+summary(gOmodeltime_LCR)
+
+check_model(gOmodeltime_LCR)
+check_overdispersion(gOmodeltime_LCR)
+
+pred_O_LCR <- ggpredict(gOmodeltime_LCR, terms = c("day", "Hedging.Type"))
+
+o_lcr <- prob_graph_LCR(pred_O_LCR, `Grwth/O`, "B", "P(Over the Hedge)")
+
+## Growth Under with time
+gUmodeltime_LCR <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly_LCR)
+summary(gUmodeltime_LCR)
+
+check_model(gUmodeltime_LCR)
+check_overdispersion(gUmodeltime_LCR)
+
+pred_U_LCR <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
+
+u_lcr <- prob_graph_LCR(pred_U_LCR, `Grwth/U`, "C", "P(Under the Hedge)")
+
+##***one figure Panel***
+
+LCR_combined_plot <- m_lcr / o_lcr / u_lcr
+LCR_combined_plot
+ggsave("Brewers Plots/Figures/LCR_combined_probability.png", plot = LCR_combined_plot, dpi = 300, width = 8,height = 12,units = "in") 
+
+```
+
