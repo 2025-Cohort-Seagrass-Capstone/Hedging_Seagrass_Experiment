@@ -19,11 +19,11 @@ library(patchwork)
 ## Data Wranging
 ```{r Data Wrangling}
 # Data across all weeks 
-weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_9_22.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
 weekly$Date <- as.Date(weekly$Date)
 
 # Extracting the width, length, height one time measurements
-onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_9_22.xlsx", sheet = "One Time Measurements") %>% 
+onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date)
 
 
@@ -36,6 +36,10 @@ brewers_weekly <- brewers_weekly %>%
   rename("Hedging.Type" = "Hedging Type",
          "Meets.Hedge" = "Meets Hedge")
 brewers_weekly$Hedging.Type[brewers_weekly$Hedging.Type == "B"] <- "W"
+
+# filter out the days before data collection stated (started 02-28-2026)
+brewers_weekly <- brewers_weekly |> 
+  filter(!Date %in% as.Date(c("2026-02-23", "2026-02-25")))
 
 ```
 
@@ -81,7 +85,7 @@ scale_color_discrete(labels = c(
     "C" = "Control",
     "G" = "GB",
     "M" = "SCR",
-    "R" = "LCR"
+    "R" = "aLCR"
   )) +
   labs(color = "Hedging Type", tag = tag) +
   ylab(ylab)+
@@ -112,8 +116,7 @@ scale_color_discrete(labels = c(
 
 ## Including time
 ```{r}
-# predicting the day at which the seagrass meets the head (like octopus example)
-
+# predicting the day at which the seagrass meets the head
 # Calulating the days since the start of the data collection
 brewers_weekly$day <- brewers_weekly$Date - brewers_weekly$Date[1]
 # number of days since starting is now the response variable
@@ -132,9 +135,8 @@ pred_m <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
 m <- prob_graph(pred_m, Meets.Hedge, "A", "P(Meeting the Hedge)")
 #shows at what day does the H. stipulacea meet the hedge
 
-brewers_weekly$`Grwth/O`<- as.integer(brewers_weekly$`Grwth/O`)
-
 ## Growth Over with time
+brewers_weekly$`Grwth/O`<- as.integer(brewers_weekly$`Grwth/O`)
 gOmodeltime <- glm(`Grwth/O` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly)
 summary(gOmodeltime)
 

@@ -9,51 +9,54 @@ library(patchwork)
 
 
 # Data across all weeks 
-weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_9_22.xlsx", sheet = "Weekly Brewers Bay monitoring")
-weekly$Date <- as.Date(weekly$Date)
+weekly_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly_data$Date <- as.Date(weekly_data$Date)
   
   # Extracting the width, length, height one time measurements
-  onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_9_22.xlsx", sheet = "One Time Measurements") %>% 
+  onetime_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date)
-
+  
+# filter out the days before data collection stated (started 02-28-2026)
+weekly_data <- weekly_data |> 
+    filter(!Date %in% as.Date(c("2026-02-23", "2026-02-25")))
 
 # Joining one time data across all weeks and selecting columns
-brewers_weekly<- weekly %>%
-  left_join(onetime, by = "Plot ID") %>% 
+weekly_coverTT<- weekly_data %>%
+  left_join(onetime_data, by = "Plot ID") %>% 
   select("Date", "Plot ID", "Hedging Type", "% Cover TT") 
 
-brewers_weekly <- brewers_weekly %>%
+weekly_coverTT <- weekly_coverTT %>%
   rename("Hedging.Type" = "Hedging Type")
-brewers_weekly$Hedging.Type[brewers_weekly$Hedging.Type == "B"] <- "W"
+weekly_coverTT$Hedging.Type[weekly_coverTT$Hedging.Type == "B"] <- "W"
 
 # Calulating the days since the start of the data collection
-brewers_weekly$day <- brewers_weekly$Date - brewers_weekly$Date[1]
+weekly_coverTT$day <- weekly_coverTT$Date - weekly_coverTT$Date[1]
 # number of days since starting is now the response variable
-brewers_weekly$day <- as.numeric(brewers_weekly$day)
+weekly_coverTT$day <- as.numeric(weekly_coverTT$day)
 
-## change % cover TT ot numeric
-brewers_weekly$`% Cover TT` <- as.numeric(brewers_weekly$`% Cover TT`)
+## change % cover TT to numeric
+weekly_coverTT$`% Cover TT` <- as.numeric(weekly_coverTT$`% Cover TT`)
 
-ggplot(brewers_weekly, aes(day, `% Cover TT`, fill = Hedging.Type))+
+ggplot(weekly_coverTT, aes(day, `% Cover TT`, fill = Hedging.Type))+
   geom_bar(stat="identity")
 
 ##Presence absence: 1 if TT present (>0), 0 if TT absent (0)
-brewers_weekly$TTpresent <- ifelse(brewers_weekly$`% Cover TT` > 0, 1, 0)
+weekly_coverTT$TTpresent <- ifelse(weekly_coverTT$`% Cover TT` > 0, 1, 0)
 
-## Meets Hedge with time
-presenceTT <- glm(TTpresent ~ Hedging.Type + day, family = "binomial", data = brewers_weekly)
+## presence of TT with time
+presenceTT <- glm(TTpresent ~ Hedging.Type + day, family = "binomial", data = weekly_coverTT)
 summary(presenceTT)
 
 check_model(presenceTT)
 check_overdispersion(presenceTT)
 
-#***meeting hedge prob***
+#***presence of TT prob***
 pred_TT <- ggpredict(presenceTT, terms = c("day", "Hedging.Type"))
 
 #shows at what day is TT present in the plot
 prob_t <- ggplot(pred_TT, aes(x = x, y = predicted, color = group)) +
     geom_line(size = 1) +
-     geom_jitter(data = brewers_weekly, aes(x = day, y = TTpresent, color = Hedging.Type),
+     geom_jitter(data = weekly_coverTT, aes(x = day, y = TTpresent, color = Hedging.Type),
                  alpha = 0.4, width = 0.7, height = 0.01) +
      geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
                  alpha = 0.2, color = NA) +
