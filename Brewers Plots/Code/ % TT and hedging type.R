@@ -44,20 +44,20 @@ weekly_coverTT <- weekly_coverTT |>
   )) 
 
 # take the mean of percent TT cover for each hedging type each data collection week
-week_coverTT_sum <- weekly_coverTT |> 
+hedge_avg_TTcover <- weekly_coverTT |> 
   group_by(Date, Hedging_Type, day) |> 
   summarize(
     mean_percent_cover = mean(`% Cover TT`))
 
 #initial look at data
-ggplot(week_coverTT_sum, aes(day, mean_percent_cover, fill = Hedging_Type))+
+ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedging_Type))+
   geom_bar(stat="identity", position = position_dodge()) +
   facet_wrap(~Hedging_Type)
 
-mean <- mean(week_coverTT_sum$mean_percent_cover)
-med <- median(week_coverTT_sum$mean_percent_cover)
+mean <- mean(hedge_avg_TTcover$mean_percent_cover)
+med <- median(hedge_avg_TTcover$mean_percent_cover)
 
-ggplot(week_coverTT_sum, aes(x = mean_percent_cover)) +
+ggplot(hedge_avg_TTcover, aes(x = mean_percent_cover)) +
   geom_histogram(bins = 30, fill = "lightblue", color = "black", alpha = 0.6) +
   geom_vline(aes(xintercept = mean, color = "Mean"), linewidth = 1.2) +
   geom_vline(aes(xintercept = med, color = "Median"), linetype = "dashed", linewidth = 1.2) +
@@ -103,7 +103,7 @@ t.test(logit_perc_cover ~ week, data = FL)
 # Univariate Statistics --------------------------------------------------
 # Testing the first vs last week of this 7 week period for differences in % TT cover within each hedging type
 
-first_last <- week_coverTT_sum |> 
+first_last <- hedge_avg_TTcover |> 
   filter(Date %in% as.Date(c("2026-02-28", "2026-04-18"))) 
 
 first_last <- first_last |> 
@@ -144,15 +144,16 @@ ggplot(FL, aes(x = `% Cover TT`)) +
   labs(y = "frequency")
 #Bi-model, right & positively skewed
 
+# Shapiro-Wilk normality test
 shapiro.test(FL$`% Cover TT`)
 # data:  first_last$log_mean_per_cover
 # W = 0.90622, p-value = 0.256
 
 ## Equal variances: Met 
-bartlett.test(log_mean_per_cover ~ Hedging_Type, data = first_last)
-# data:  log_mean_per_cover by Hedging_Type
-# Bartlett's K-squared = 0.26715, df = 4,
-# p-value = 0.9918
+# Bartlett test of homogeneity of variances
+bartlett.test(log_mean_per_cover ~ week, data = first_last)
+# data:  log_mean_per_cover by week
+# Bartlett's K-squared = 0.1312, df = 1, p-value = 0.7172
 
 t.test(log_mean_per_cover ~ week, data = first_last)
 # Welch Two Sample t-test
