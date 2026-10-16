@@ -52,7 +52,11 @@ hedge_avg_TTcover <- weekly_coverTT |>
 #initial look at data
 ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedging_Type))+
   geom_bar(stat="identity", position = position_dodge()) +
-  facet_wrap(~Hedging_Type)
+  facet_wrap(~Hedging_Type) +
+  labs(
+    y = "Mean percent cover of TT (%)", 
+    x = "Day since first data collection"
+  )
 
 mean <- mean(hedge_avg_TTcover$mean_percent_cover)
 med <- median(hedge_avg_TTcover$mean_percent_cover)
