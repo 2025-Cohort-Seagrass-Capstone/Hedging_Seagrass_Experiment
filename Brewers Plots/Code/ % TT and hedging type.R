@@ -6,6 +6,7 @@ library(sjPlot)
 library(performance)
 library(ggeffects)
 library(patchwork)
+library(car)
 
 
 # Data across all weeks 
@@ -53,8 +54,116 @@ ggplot(week_coverTT_sum, aes(day, mean_percent_cover, fill = Hedging_Type))+
   geom_bar(stat="identity", position = position_dodge()) +
   facet_wrap(~Hedging_Type)
 
+mean <- mean(week_coverTT_sum$mean_percent_cover)
+med <- median(week_coverTT_sum$mean_percent_cover)
+
+ggplot(week_coverTT_sum, aes(x = mean_percent_cover)) +
+  geom_histogram(bins = 30, fill = "lightblue", color = "black", alpha = 0.6) +
+  geom_vline(aes(xintercept = mean, color = "Mean"), linewidth = 1.2) +
+  geom_vline(aes(xintercept = med, color = "Median"), linetype = "dashed", linewidth = 1.2) +
+  labs(y = "frequency")
+
+# Raw TT t-test -----------------------------------------------------------
+# t-test on raw TT cover data between first and last week
+
+FL <- weekly_coverTT |> 
+  filter(Date %in% as.Date(c("2026-02-28", "2026-04-18"))) 
+
+FL$`% Cover TT` <- FL$`% Cover TT`/100
+
+# did logit bc some values are 0 (if log then the result would be -Inf)
+FL <- FL |> 
+  mutate(
+    week = case_when(
+      Date == "2026-02-28" ~ "first",
+      Date == "2026-04-18" ~ "last",
+      TRUE  ~ "other"),  
+    logit_perc_cover = logit(`% Cover TT`, percents = TRUE))
+
+shapiro.test(FL$logit_perc_cover)
+# data:  FL$`% Cover TT`
+# W = 0.78469, p-value = 3.491e-05
+
+# After Transformation
+# data:  FL$logit_perc_cover
+# W = 0.84496, p-value = 0.0004871
+
+t.test(logit_perc_cover ~ week, data = FL)
+# Welch Two Sample t-test
+# data:  logit_perc_cover by week
+# t = 6.2639, df = 16.199, p-value = 1.068e-05
+# alternative hypothesis: true difference in means between group first and group last is not equal to 0
+# 95 percent confidence interval:
+#   0.5727255 1.1578142
+# sample estimates:
+#   mean in group first  mean in group last 
+# -2.575413           -3.440682
 
 
+# Univariate Statistics --------------------------------------------------
+# Testing the first vs last week of this 7 week period for differences in % TT cover within each hedging type
+
+first_last <- week_coverTT_sum |> 
+  filter(Date %in% as.Date(c("2026-02-28", "2026-04-18"))) 
+
+first_last <- first_last |> 
+  mutate(
+    week = case_when(
+      Date == "2026-02-28" ~ "first",
+      Date == "2026-04-18" ~ "last",
+      TRUE  ~ "other"))
+  
+## Assumptions:
+# Independence = Met
+# Normality of residuals = Not Met
+mean <- mean(first_last$mean_percent_cover)
+med <- median(first_last$mean_percent_cover)
+
+ggplot(first_last, aes(x = mean_percent_cover)) +
+  geom_histogram(bins = 30, fill = "lightblue", color = "black", alpha = 0.6) +
+  geom_vline(aes(xintercept = mean, color = "Mean"), linewidth = 1.2) +
+  geom_vline(aes(xintercept = med, color = "Median"), linetype = "dashed", linewidth = 1.2) +
+  labs(y = "frequency")
+#Bi-model, right & positively skewed
+
+shapiro.test(first_last$mean_percent_cover)
+# data:  first_last$mean_percent_cover
+#W = 0.80626, p-value = 0.01727
+
+##Transform data log because of positive skew
+first_last$log_mean_per_cover <- log(first_last$mean_percent_cover)
+
+# Normality of residuals = Met after Log tranformation
+mean <- mean(FL$`% Cover TT`)
+med <- median(FL$`% Cover TT`)
+
+ggplot(FL, aes(x = `% Cover TT`)) +
+  geom_histogram(bins = 30, fill = "lightblue", color = "black", alpha = 0.6) +
+  geom_vline(aes(xintercept = mean, color = "Mean"), linewidth = 1.2) +
+  geom_vline(aes(xintercept = med, color = "Median"), linetype = "dashed", linewidth = 1.2) +
+  labs(y = "frequency")
+#Bi-model, right & positively skewed
+
+shapiro.test(FL$`% Cover TT`)
+# data:  first_last$log_mean_per_cover
+# W = 0.90622, p-value = 0.256
+
+## Equal variances: Met 
+bartlett.test(log_mean_per_cover ~ Hedging_Type, data = first_last)
+# data:  log_mean_per_cover by Hedging_Type
+# Bartlett's K-squared = 0.26715, df = 4,
+# p-value = 0.9918
+
+t.test(log_mean_per_cover ~ week, data = first_last)
+# Welch Two Sample t-test
+# data:  log_mean_per_cover by week
+# t = 6.8407, df = 7.7203, p-value = 0.0001561
+# alternative hypothesis: true difference in means between group first and group last is not equal to 0
+# 95 percent confidence interval:
+#   1.378083 2.793109
+# sample estimates:
+#   mean in group first  mean in group last 
+# 1.6096866          -0.4759092
 
 # Not using ---------------------------------------------------------------
 
