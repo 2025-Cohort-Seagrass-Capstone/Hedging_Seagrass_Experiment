@@ -10,14 +10,14 @@ library(ggeffects)
 library(patchwork)
 
 #Get the data
-excel_sheets("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_9_22.xlsx")
-shootraw <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
+excel_sheets("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_shootCountAdj.xlsx")
+shootraw <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_shootCountAdj.xlsx", sheet = "Weekly Brewers Bay monitoring")
 
 onetime <- read_xlsx("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Data_4_20.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date)
 
 shootraw <- shootraw %>% 
-   filter(!Date %in% as.Date(c( "2026-02-23", "2026-02-25")))
+   filter(!shootraw$Date %in% as.Date(c( "2026-02-23", "2026-02-25")))
 
 shoot_join<- shootraw %>%
   left_join(onetime, by = "Plot ID") %>% 
@@ -49,8 +49,8 @@ Pb / Pp / B
 shootsum <- shoot_join %>% 
   mutate(shoots_sum = rowSums(across(c(`Shoot count Pb`, `Shoot count Pp`, `Shoot count B`)))) %>% 
   mutate(
-    `Hedging Type`=recode(`Hedging Type`,
-                        "W" = "WB",
+    `Hedging Type`=dplyr::recode(`Hedging Type`,
+                        "B" = "WB",
                         "Control" = "C",
                         "G" = "GB",
                         "M" = "SCR",
@@ -64,3 +64,67 @@ sum <- ggplot(data = shootsum)+
               )
 #Graph it
 sum
+
+###################################################################################
+
+###########Need to turn this data to long############
+
+shoots_long <- shootsum %>% 
+  select(Date, `Plot ID`, `Shoot count Pb`, `Shoot count Pp`, `Shoot count B`, `Grazing (Y/N)`, `Hedging Type`, shoots_sum) %>% 
+  filter((!is.na(Date)))
+  
+shoots_longer <- shoots_long %>% 
+  pivot_longer(
+    cols = c(`Shoot count Pb`, `Shoot count Pp`, `Shoot count B`), # The columns you want to collapse
+    names_to = "Treatment_type",  # Name of the new column for the old column headers
+    values_to = "Shoot_Count"   # Name of the new column for the cell values
+  )
+
+shoots_longer <- shoots_longer %>% 
+  mutate(
+    Treatment_type=recode(Treatment_type,
+                          "Shoot count Pb" = "Pb",
+                          "Shoot count Pp" = "Pp",
+                          "Shoot count B" = "B"
+  ))
+  
+unique(shootsum$Date)
+
+
+# Calulating the days since the start of the data collection
+shoots_longer$day <- shoots_longer$Date - shoots_longer$Date[1]
+# number of days since starting is now the response variable
+shoots_longer$day <- as.numeric(shoots_longer$day)
+
+
+
+
+
+
+library(lme4)
+
+
+# 1. Fit the Negative Binomial GLMM
+# (1 | plant_id) specifies a random intercept for each individual plant
+glmm_model <- glmer(Shoot_Count ~ Treatment_type * day + (1 | `Plot ID`), 
+                       data = shoots_longer)
+
+# 2. Check the model summary
+summary(glmm_model)
+
+#####################################################################################
+library(glmmTMB)
+
+plant_model <- glmmTMB(Shoot_Count ~ Treatment_type + day + (1 | `Plot ID`), 
+                       data = shoots_longer, 
+                       family = nbinom2)
+summary(plant_model)
+check_overdispersion(plant_model)
+
+library(emmeans)
+
+# 1. Get the averages for each treatment type
+treatment_means <- emmeans(plant_model, specs = ~ Treatment_type)
+
+# 2. Compare them all against each other
+pairs(treatment_means, adjust = "tukey")
