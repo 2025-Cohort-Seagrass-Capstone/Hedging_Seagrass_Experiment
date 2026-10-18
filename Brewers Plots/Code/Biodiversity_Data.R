@@ -59,7 +59,7 @@ ggplot(data = fish_long_cooked)+
 
 #Average species
 fish_average <- fish_long_cooked %>%
-  group_by(hedging) %>%                  # Group by your hedging column
+  group_by(hedging, species) %>%                  # Group by your hedging column
   mutate(avg_count = mean(count, na.rm = TRUE)) %>%   # Calculate the average
   mutate(sd_count = sd(count, na.rm = TRUE))
 
