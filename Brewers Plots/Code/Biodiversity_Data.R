@@ -11,6 +11,7 @@ library(patchwork)
 
 excel_sheets("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts.xlsx")
 fishraw <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
+classraw <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
 
 excel_sheets("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
 fishraw2 <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
@@ -64,10 +65,18 @@ fish_average <- fish_long_cooked %>%
 
 fish_average$hedging <- factor(fish_average$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
 
-ggplot(data = fish_average)+
+ggplot(data = fish_long_cooked)+
   geom_boxplot(aes(x = count, y = hedging, fill = hedging)) +
   #geom_jitter(aes(x = count, y = hedging), width = 0.15, height = 0) +
-  labs(y = "Hedging Type", x = "Average Count (Per Hedging Unit)")
+  labs(y = "Hedging Type", x = "Average Count (Per Hedging Unit)", title = "Distribution of Fish Counts by Hedging Type")
+############
+anova_model <- aov(count ~ hedging, data = fish_long_cooked)
+summary(anova_model)
+
+tukey_result <- TukeyHSD(anova_model)
+print(tukey_result)
+##############
+
 
 bioglm <- glm(count ~ hedging, family = poisson, data = fish_average)
 summary(bioglm)
@@ -122,8 +131,7 @@ summary(bioglmLCR)
 counts_fish <- fish_long_cooked %>% 
   count(hedging, species, name = "species_count")
 
-# View the result
-print(counts_df)
+
 #####################################################################################
 
 unique_counts <- fish_long_cooked %>%
@@ -136,3 +144,84 @@ unique_counts$hedging <- factor(unique_counts$hedging, levels = c("LCR", "SCR", 
 #Total counts
 ggplot(data = unique_counts)+
   geom_col(aes(x = unique_species_count, y = hedging))
+
+######################################################################################
+classraw <- classraw %>% 
+  rename(species = Common_Name)
+
+#Left join the class
+joined_class <- left_join(fish_long_cooked, classraw, by = "species")
+
+# 2. Calculate Total and Relative Abundance simultaneously
+abundance_summary <- joined_class %>%
+  group_by(hedging) %>%
+  mutate(Total_Site_Abundance = sum(count)) %>%  # Total per site
+  group_by(hedging, species) %>%
+  mutate(
+    Absolute_Abundance = sum(count),
+    Relative_Abundance = Absolute_Abundance / first(Total_Site_Abundance)
+  )
+
+#############LCR####################
+ab_LCR <- abundance_summary %>%
+  filter(hedging == "LCR") %>% 
+  mutate(ab_per_site = Absolute_Abundance/3)
+LCR <- ggplot(data = ab_LCR)+
+  geom_boxplot(aes(x = count, y = Class))+
+  labs(title = "LCR")
+LCR
+
+#############SCR####################
+ab_SCR <- abundance_summary %>%
+  filter(hedging == "SCR") %>% 
+  mutate(ab_per_site = Absolute_Abundance/3)
+SCR <- ggplot(data = ab_SCR)+
+  geom_boxplot(aes(x = count, y = Class))+
+  labs(title = "SCR")
+SCR
+
+#############WB####################
+ab_WB <- abundance_summary %>%
+  filter(hedging == "WB") %>% 
+  mutate(ab_per_site = Absolute_Abundance/3)
+WB <- ggplot(data = ab_WB)+
+  geom_boxplot(aes(x = count, y = Class))+
+  labs(title = "WB")
+WB
+
+#############GB####################
+ab_GB <- abundance_summary %>%
+  filter(hedging == "GB") %>% 
+  mutate(ab_per_site = Absolute_Abundance/3)
+GB <- ggplot(data = ab_GB)+
+  geom_boxplot(aes(x = count, y = Class))+
+  labs(title = "GB")
+GB
+#############no hedge (control)####################
+ab_Con <- abundance_summary %>%
+  filter(hedging == "no hedge (control)") %>% 
+  mutate(ab_per_site = Absolute_Abundance/3)
+Con <- ggplot(data = ab_Con)+
+  geom_boxplot(aes(x = count, y = Class))+
+  labs(title = "no hedge (control)")
+Con
+
+#############LCR####################
+ab_Ran <- abundance_summary %>%
+  filter(hedging == "no hedge (random)") %>% 
+  mutate(ab_per_site = Absolute_Abundance/3)
+Ran <- ggplot(data = ab_Ran)+
+  geom_boxplot(aes(x = count, y = Class))+
+  labs(title = "no hedge (random)")
+Ran
+
+LCR + SCR + GB + WB + Con + Ran
+
+
+
+
+
+
+
+
+
