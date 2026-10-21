@@ -27,7 +27,8 @@ fish_long <- data.frame(
   # Replace 'hedging_type' with your exact column name
   hedging = rep(fishraw$Hedging_Type, times = num_pairs), 
   species = unlist(fishraw %>% select(starts_with("species")), use.names = FALSE),
-  count   = unlist(fishraw %>% select(starts_with("count")), use.names = FALSE)
+  count   = unlist(fishraw %>% select(starts_with("count")), use.names = FALSE),
+  ID = rep(fishraw$Plot_ID, times = num_pairs)
 )
 
 
@@ -41,7 +42,8 @@ fish_long2 <- data.frame(
   # Replace 'hedging_type' with your exact column name
   hedging = rep(fishraw2$Hedging_Type, times = num_pairs2), 
   species = unlist(fishraw2 %>% select(starts_with("species")), use.names = FALSE),
-  count   = unlist(fishraw2 %>% select(starts_with("count")), use.names = FALSE)
+  count   = unlist(fishraw2 %>% select(starts_with("count")), use.names = FALSE),
+  ID = rep(fishraw$Plot_ID, times = num_pairs)
 )
 
 #filter out a third no hedge value
@@ -54,8 +56,8 @@ unique(fish_long2$hedging)
 fish_long_cooked$hedging <- factor(fish_long_cooked$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
 
 #Total counts
-ggplot(data = fish_long_cooked)+
-  geom_col(aes(x = count, y = hedging, fill = species))
+ggplot(data = abundance_summary)+
+  geom_col(aes(x = count, y = hedging, fill = Family))
 
 #Average species
 fish_average <- fish_long_cooked %>%
@@ -134,16 +136,16 @@ counts_fish <- fish_long_cooked %>%
 
 #####################################################################################
 
-unique_counts <- fish_long_cooked %>%
+unique_counts <- abundance_summary %>%
   group_by(hedging) %>%
-  summarize(unique_species_count = n_distinct(species))
+  summarize(unique_family_count = n_distinct(Family))
 
 #Arrange the hedging types to be consistent
 unique_counts$hedging <- factor(unique_counts$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
 
 #Total counts
 ggplot(data = unique_counts)+
-  geom_col(aes(x = unique_species_count, y = hedging))
+  geom_col(aes(x = unique_family_count, y = hedging))
 
 ######################################################################################
 classraw <- classraw %>% 
@@ -215,13 +217,218 @@ Ran <- ggplot(data = ab_Ran)+
   labs(title = "no hedge (random)")
 Ran
 
-LCR + SCR + GB + WB + Con + Ran
+LCR + SCR + GB + WB + Con + Ran 
+################################################################
+#fish_long_cooked
+glimpse(fish_long_cooked)
+
+fishmodel <- aov(count ~ hedging, data = abundance_summary)
+summary(fishmodel)
 
 
+shapiro.test(residuals(fishmodel))
+qqnorm(residuals(fishmodel))
+qqline(residuals(fishmodel))
 
 
+# Make "Random" the reference/baseline level
+abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (random)")
+
+abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (random)", "no hedge (control)", "GB", "WB", "SCR", "LCR"))
+
+model_poisR <- glm(
+  count ~ hedging,
+  family = poisson,
+  data = abundance_summary
+)
+
+summary(model_poisR)
+
+# Make "Control" the reference/baseline level
+abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (control)")
+
+abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (control)", "no hedge (random)", "GB", "WB", "SCR", "LCR"))
+
+model_poisC <- glm(
+  count ~ hedging,
+  family = poisson,
+  data = abundance_summary
+)
+
+summary(model_poisC)
 
 
+# Make "LCR" the reference/baseline level
+abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "LCR")
+
+abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("LCR", "no hedge (control)", "no hedge (random)", "GB", "WB", "SCR"))
+
+model_poisLCR <- glm(
+  count ~ hedging,
+  family = poisson,
+  data = abundance_summary
+)
+
+summary(model_poisLCR)
+
+check_overdispersion(model_poisC)
+check_overdispersion(model_poisR)
+check_overdispersion(model_poisLCR)
+
+##############################################
+library(MASS)
+
+# Make "LCR" the reference/baseline level
+abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "LCR")
+
+abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("LCR", "no hedge (control)", "no hedge (random)", "GB", "WB", "SCR"))
+
+model.nbLCR <- glm.nb(
+  count ~ hedging,
+  data = abundance_summary
+)
+summary(model.nbLCR)
+###########################
+abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (control)")
+
+abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (control)", "no hedge (random)", "GB", "WB", "SCR", "LCR"))
+
+model.nbC <- glm.nb(
+  count ~ hedging,
+  data = abundance_summary
+)
+summary(model.nbC)
+##############################
+abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (random)")
+
+abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (random)", "no hedge (control)", "GB", "WB", "SCR", "LCR"))
+
+model.nbR <- glm.nb(
+  count ~ hedging,
+  data = abundance_summary
+)
+summary(model.nbR)
+
+check_overdispersion(model.nbC)
+check_overdispersion(model.nbR)
+check_overdispersion(model.nbLCR)
+
+model_null <- glm.nb(
+  count ~ 1,
+  data = abundance_summary
+)
+
+anova(model_null, model.nbC, test = "LRT")
+library(emmeans)
+
+emmeans(model.nbC, pairwise ~ hedging, type = "response", adjust = "tukey")
+#############################################################################
+library(dplyr)
+
+richness_fam <- abundance_summary %>%
+  group_by(ID, hedging) %>%
+  dplyr::summarise(
+    family_richness = n_distinct(Family, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+str(richness_fam)
+summary(richness_fam$family_richness)
+
+boxplot(
+  family_richness ~ hedging,
+  data = richness_fam
+)
+
+model_richness <- glm.nb(
+  family_richness ~ hedging,
+  data = richness_fam
+)
+
+summary(model_richness)
+
+check_overdispersion(model_richness)
+
+model_poisfam <- glm(
+  family_richness ~ hedging,
+  family = poisson(link = "log"),
+  data = richness_fam
+)
+summary(model_poisfam)
+check_overdispersion(model_poisfam)
 
 
+model_richness_null <- glm(
+  family_richness ~ 1,
+  family = poisson(link = "log"),
+  data = richness_fam
+)
 
+anova(
+  model_richness_null,
+  model_richness,
+  test = "Chisq"
+)
+
+richness_results <- emmeans(
+  model_richness,
+  pairwise ~ hedging,
+  type = "response",
+  adjust = "tukey"
+)
+summary(richness_results)
+richness_results
+
+#########################################
+
+install.packages("vegan")  # Run once
+library(dplyr)
+library(vegan) 
+family_counts <- abundance_summary %>%
+  count(ID, hedging, Family, name = "countfam")
+community <- xtabs(
+    countfam ~ ID + Family,
+    data = family_counts
+  )
+shannon <- diversity(community, index = "shannon")
+
+shannon_results <- data.frame(
+  ID = rownames(community),
+  shannon = as.numeric(shannon)
+)
+shannon_results <- shannon_results %>%
+  left_join(
+    abundance_summary %>% distinct(ID, hedging),
+    by = "ID"
+  )
+boxplot(shannon ~ hedging, data = shannon_results)
+
+shapiro.test(shannon_results$shannon)
+
+model_shannon <- aov(
+  shannon ~ hedging,
+  data = shannon_results
+)
+
+shapiro.test(residuals(model_shannon))
+qqnorm(residuals(model_shannon))
+qqline(residuals(model_shannon), col = "red")
+
+library(car)
+leveneTest(shannon ~ hedging, data = shannon_results)
+kruskal.test(shannon ~ hedging, data = shannon_results)
+
+
+pairwise.wilcox.test(
+  shannon_results$shannon,
+  shannon_results$hedging,
+  p.adjust.method = "BH"
+)
+
+shannon_results |>
+  dplyr::group_by(hedging) |>
+  dplyr::summarise(
+    median_shannon = median(shannon, na.rm = TRUE),
+    mean_shannon = mean(shannon, na.rm = TRUE),
+    n = dplyr::n()
+  )
