@@ -220,3 +220,53 @@ ggsave("Brewers Plots/Figures/LCR_combined_probability.png", plot = LCR_combined
 
 ```
 
+## At what day HS met the hedge (proportion across all plots)
+```{r}
+## Hedging Proportion over time
+prop_weekly <- brewers_weekly %>% 
+  group_by(Date, `Hedging.Type`) %>% 
+  summarize(
+    prop_meets = mean(`Meets.Hedge`)
+  ) 
+prop_weekly$prop <- (prop_weekly$prop_meets * 3)/15 # multiplied by 3 (3 plots for each hedging type) and divide by 15 as the total number of plots
+
+prop_weekly$day <- prop_weekly$Date - prop_weekly$Date[1]
+# number of days since starting is now the response variable
+prop_weekly$day <- as.numeric(difftime(prop_weekly$Date, prop_weekly$Date[1], units = "days"))
+prop_weekly$day <- factor(prop_weekly$day)
+  
+#***Hedging Proportion over time***
+p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
+  geom_bar(stat = "identity", position = "stack") +
+  xlab("Date") +
+  ylim(0, 1) +
+  ylab(expression(paste(italic("H. stipulacea"), " at hedge (%)"))) +
+  theme_bw() +
+  labs(fill = "Hedging Type") +
+  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting"))) +
+  scale_fill_manual(values = c(
+    "WB" = "#00B0F6",
+    "C" = "#F8766D",
+    "GB" = "#E76BF3",
+    "SCR" = "#A3A500",
+    "LCR" = "#00BF7D"
+  ),
+  labels = c(
+    "WB" = "WB",
+    "C" = "Control",
+    "GB" = "GB",
+    "SCR" = "SCR",
+    "LCR" = "LCR"
+  )) +
+  theme(
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25),
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 22),
+    strip.text = element_text(size = 22)
+  )
+p
+```
+
