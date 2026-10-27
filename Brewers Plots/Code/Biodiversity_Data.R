@@ -9,12 +9,12 @@ library(ggeffects)
 library(patchwork)
 
 
-excel_sheets("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts.xlsx")
-fishraw <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
-classraw <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
+excel_sheets("Brewers Plots/DataFiles/Capstone Fish Counts.xlsx")
+fishraw <- read_excel("Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
+classraw <- read_excel("Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
 
-excel_sheets("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
-fishraw2 <- read_excel("C:/Users/adamk/Desktop/GIS Class coding/Seagrass-Stats/Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
+excel_sheets("Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
+fishraw2 <- read_excel("Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
 
 
 ###random and control are the same###
