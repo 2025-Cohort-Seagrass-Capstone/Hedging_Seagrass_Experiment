@@ -432,3 +432,44 @@ shannon_results |>
     mean_shannon = mean(shannon, na.rm = TRUE),
     n = dplyr::n()
   )
+
+#############################################################
+#NMDS?
+library(vegan)
+library(dplyr)
+
+ab_clean <- abundance_summary %>% 
+group_by(Family, hedging, ID) %>%
+  summarise(across(where(is.numeric), sum)) %>% 
+  select(hedging, Family, Absolute_Abundance, ID)#%>% 
+  #drop_na()
+
+ab_clean_wide <- ab_clean %>% 
+  pivot_wider(
+    names_from = Family, 
+    values_from = Absolute_Abundance
+  )
+  
+
+justrich <- ab_clean_wide  %>% 
+  ungroup() %>% 
+  select("Acanthuridae":"Pomacentridae") 
+justrich[is.na(justrich)] <- 0
+env.data <- ab_clean_wide %>% 
+  ungroup() %>% 
+  select(hedging)
+
+
+
+nmds_result <- metaMDS(justrich, distance = "bray", k = 2, trymax = 100)
+print(nmds_result$stress)
+sample_coords <- as.data.frame(scores(nmds_result, display = "sites"))
+
+sample_coords$hedging <- env.data$hedging 
+
+plot(nmds_result, type = "n", main = "NMDS of Family Richness by Hedging Type")
+colors <- as.numeric(as.factor(sample_coords$hedging))
+points(nmds_result, display = "sites", col = colors, pch = 16, cex = 1.5)
+
+ordiellipse(nmds_result, groups = sample_coords$hedging, 
+            kind = "sd", label = TRUE, col = 1:max(colors), lwd = 2)
