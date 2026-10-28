@@ -473,3 +473,4 @@ points(nmds_result, display = "sites", col = colors, pch = 16, cex = 1.5)
 
 ordiellipse(nmds_result, groups = sample_coords$hedging, 
             kind = "sd", label = TRUE, col = 1:max(colors), lwd = 2)
+
