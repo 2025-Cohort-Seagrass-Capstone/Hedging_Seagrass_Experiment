@@ -276,7 +276,7 @@ check_overdispersion(model_poisR)
 check_overdispersion(model_poisLCR)
 
 ##############################################
-library(MASS)
+#library(MASS)
 
 # Make "LCR" the reference/baseline level
 abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "LCR")
@@ -441,8 +441,8 @@ library(dplyr)
 ab_clean <- abundance_summary %>% 
 group_by(Family, hedging, ID) %>%
   summarise(across(where(is.numeric), sum)) %>% 
-  select(hedging, Family, Absolute_Abundance, ID)#%>% 
-  #drop_na()
+  select(hedging, Family, Absolute_Abundance, ID)%>% 
+  drop_na()
 
 ab_clean_wide <- ab_clean %>% 
   pivot_wider(
@@ -461,9 +461,10 @@ env.data <- ab_clean_wide %>%
 
 
 
-nmds_result <- metaMDS(justrich, distance = "bray", k = 2, trymax = 100)
+nmds_result <- metaMDS(justrich, distance = "bray", k = 2, trymax = 200)
 print(nmds_result$stress)
 sample_coords <- as.data.frame(scores(nmds_result, display = "sites"))
+
 
 sample_coords$hedging <- env.data$hedging 
 
@@ -473,4 +474,61 @@ points(nmds_result, display = "sites", col = colors, pch = 16, cex = 1.5)
 
 ordiellipse(nmds_result, groups = sample_coords$hedging, 
             kind = "sd", label = TRUE, col = 1:max(colors), lwd = 2)
+
+
+# m_com = community matrix (samples in rows, species/variables in columns)
+# pc$Type = factor containing group assignments
+ano <- anosim(justrich, env.data$hedging, distance = "bray", permutations = 9999)
+summary(ano)
+print(ano)
+
+
+
+# Run the SIMPER analysis
+simper_result <- simper(comm = justrich, grouping = env.data$hedging, permutations = 999)
+
+# View the summary output
+summary(simper_result)
+
+############################
+
+# 1. Setup shapes and labels
+group_factor <- as.factor(sample_coords$hedging)
+group_levels <- levels(group_factor)
+shapes <- c(15, 16, 17, 18, 1, 2)[as.numeric(group_factor)] 
+plot_color <- "black" 
+
+# 2. Extract coordinates to establish limits
+nmds_scores <- scores(nmds_result, display = "sites")
+x_min <- min(nmds_scores[,1])
+x_max <- max(nmds_scores[,1])
+y_max <- max(nmds_scores[,2])
+
+# 3. Draw the NMDS plot with a 40% expanded X-axis limit on the right
+plot(nmds_result, type = "n", 
+     xlim = c(x_min, x_max + (x_max - x_min) * 0.40)) 
+
+# 4. Add sites and ellipses
+points(nmds_result, display = "sites", col = plot_color, pch = shapes, cex = 1.5)
+ordiellipse(nmds_result, groups = sample_coords$hedging, 
+            kind = "sd", label = F, col = "grey50", lwd = 1.5, lty = 2)
+
+# 5. Add the Group Legend (Smaller and pushed all the way right)
+# Increase the multiplier (e.g., x_max * 1.15) if you want to push it even further out
+legend(x = x_max * 1.45, 
+       y = y_max * 1.5, 
+       legend = group_levels, 
+       pch = c(15, 16, 17, 18, 1, 2)[1:length(group_levels)], 
+       col = plot_color, 
+       pt.cex = 1.2,       
+       cex = 0.8,          # Keeps the group names smaller (80% size)
+       title.cex = 1.2,    # Bumps the "Hedging Type" title up to 120% size
+       xjust = 0,          
+       title = "Hedging Type",
+       bty = "n")
+
+# 6. Add the Stress Value (Bottom-Left)
+stress_text <- paste("Stress =", round(nmds_result$stress, 3))
+legend("bottomleft", legend = stress_text, bty = "n", cex = 0.8)
+
 
