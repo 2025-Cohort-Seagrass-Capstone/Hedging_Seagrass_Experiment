@@ -56,8 +56,8 @@ unique(fish_long2$hedging)
 fish_long_cooked$hedging <- factor(fish_long_cooked$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
 
 #Total counts
-ggplot(data = abundance_summary)+
-  geom_col(aes(x = count, y = hedging, fill = Family))
+#ggplot(data = abundance_summary)+
+#  geom_col(aes(x = count, y = hedging, fill = Family))
 
 #Average species
 fish_average <- fish_long_cooked %>%
@@ -67,71 +67,7 @@ fish_average <- fish_long_cooked %>%
 
 fish_average$hedging <- factor(fish_average$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
 
-ggplot(data = fish_long_cooked)+
-  geom_boxplot(aes(x = count, y = hedging, fill = hedging)) +
-  #geom_jitter(aes(x = count, y = hedging), width = 0.15, height = 0) +
-  labs(y = "Hedging Type", x = "Average Count (Per Hedging Unit)", title = "Distribution of Fish Counts by Hedging Type")
-############
-anova_model <- aov(count ~ hedging, data = fish_long_cooked)
-summary(anova_model)
 
-tukey_result <- TukeyHSD(anova_model)
-print(tukey_result)
-##############
-
-
-bioglm <- glm(count ~ hedging, family = poisson, data = fish_average)
-summary(bioglm)
-
-check_model(bioglm)
-check_overdispersion(bioglm)
-
-###########################Look at GLM against control#######################
-
-glimpse(fish_average)
-fish_average$hedging <- as.factor(fish_average$hedging)
-
-# Make "Control" the reference/baseline level
-fish_average$hedging <- relevel(fish_average$hedging, ref = "no hedge (control)")
-
-fish_average$hedging <- factor(fish_average$hedging, levels = c("no hedge (control)", "no hedge (random)", "GB", "WB", "SCR", "LCR"))
-
-bioglm1 <- glm(count ~ hedging, family = poisson, data = fish_average)
-summary(bioglm1)
-##All differ significantly except random no hedge##
-
-###########################Look at GLM against random#######################
-
-glimpse(fish_average)
-fish_average$hedging <- as.factor(fish_average$hedging)
-
-# Make "Control" the reference/baseline level
-fish_average$hedging <- relevel(fish_average$hedging, ref = "no hedge (random)")
-
-fish_average$hedging <- factor(fish_average$hedging, levels = c("no hedge (random)", "no hedge (control)", "GB", "WB", "SCR", "LCR"))
-
-bioglm2 <- glm(count ~ hedging, family = poisson, data = fish_average)
-summary(bioglm2)
-##All differ significantly except control no hedge##
-
-###########################Look at GLM against LCR#######################
-
-glimpse(fish_average)
-fish_average$hedging <- as.factor(fish_average$hedging)
-
-# Make "Control" the reference/baseline level
-fish_average$hedging <- relevel(fish_average$hedging, ref = "LCR")
-
-fish_average$hedging <- factor(fish_average$hedging, levels = c("LCR", "no hedge (control)", "no hedge (random)", "GB", "WB", "SCR"))
-
-bioglmLCR <- glm(count ~ hedging, family = poisson, data = fish_average)
-summary(bioglmLCR)
-##All differ significantly except SCR
-
-#####################################################################################
-
-counts_fish <- fish_long_cooked %>% 
-  count(hedging, species, name = "species_count")
 
 
 #####################################################################################
@@ -164,166 +100,11 @@ abundance_summary <- joined_class %>%
     Relative_Abundance = Absolute_Abundance / first(Total_Site_Abundance)
   )
 
-#############LCR####################
-ab_LCR <- abundance_summary %>%
-  filter(hedging == "LCR") %>% 
-  mutate(ab_per_site = Absolute_Abundance/3)
-LCR <- ggplot(data = ab_LCR)+
-  geom_boxplot(aes(x = count, y = Class))+
-  labs(title = "LCR")
-LCR
 
-#############SCR####################
-ab_SCR <- abundance_summary %>%
-  filter(hedging == "SCR") %>% 
-  mutate(ab_per_site = Absolute_Abundance/3)
-SCR <- ggplot(data = ab_SCR)+
-  geom_boxplot(aes(x = count, y = Class))+
-  labs(title = "SCR")
-SCR
-
-#############WB####################
-ab_WB <- abundance_summary %>%
-  filter(hedging == "WB") %>% 
-  mutate(ab_per_site = Absolute_Abundance/3)
-WB <- ggplot(data = ab_WB)+
-  geom_boxplot(aes(x = count, y = Class))+
-  labs(title = "WB")
-WB
-
-#############GB####################
-ab_GB <- abundance_summary %>%
-  filter(hedging == "GB") %>% 
-  mutate(ab_per_site = Absolute_Abundance/3)
-GB <- ggplot(data = ab_GB)+
-  geom_boxplot(aes(x = count, y = Class))+
-  labs(title = "GB")
-GB
-#############no hedge (control)####################
-ab_Con <- abundance_summary %>%
-  filter(hedging == "no hedge (control)") %>% 
-  mutate(ab_per_site = Absolute_Abundance/3)
-Con <- ggplot(data = ab_Con)+
-  geom_boxplot(aes(x = count, y = Class))+
-  labs(title = "no hedge (control)")
-Con
-
-#############LCR####################
-ab_Ran <- abundance_summary %>%
-  filter(hedging == "no hedge (random)") %>% 
-  mutate(ab_per_site = Absolute_Abundance/3)
-Ran <- ggplot(data = ab_Ran)+
-  geom_boxplot(aes(x = count, y = Class))+
-  labs(title = "no hedge (random)")
-Ran
-
-LCR + SCR + GB + WB + Con + Ran 
-################################################################
-#fish_long_cooked
-glimpse(fish_long_cooked)
-
-fishmodel <- aov(count ~ hedging, data = abundance_summary)
-summary(fishmodel)
-
-
-shapiro.test(residuals(fishmodel))
-qqnorm(residuals(fishmodel))
-qqline(residuals(fishmodel))
-
-
-# Make "Random" the reference/baseline level
-abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (random)")
-
-abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (random)", "no hedge (control)", "GB", "WB", "SCR", "LCR"))
-
-model_poisR <- glm(
-  count ~ hedging,
-  family = poisson,
-  data = abundance_summary
-)
-
-summary(model_poisR)
-
-# Make "Control" the reference/baseline level
-abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (control)")
-
-abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (control)", "no hedge (random)", "GB", "WB", "SCR", "LCR"))
-
-model_poisC <- glm(
-  count ~ hedging,
-  family = poisson,
-  data = abundance_summary
-)
-
-summary(model_poisC)
-
-
-# Make "LCR" the reference/baseline level
-abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "LCR")
-
-abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("LCR", "no hedge (control)", "no hedge (random)", "GB", "WB", "SCR"))
-
-model_poisLCR <- glm(
-  count ~ hedging,
-  family = poisson,
-  data = abundance_summary
-)
-
-summary(model_poisLCR)
-
-check_overdispersion(model_poisC)
-check_overdispersion(model_poisR)
-check_overdispersion(model_poisLCR)
-
-##############################################
-#library(MASS)
-
-# Make "LCR" the reference/baseline level
-abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "LCR")
-
-abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("LCR", "no hedge (control)", "no hedge (random)", "GB", "WB", "SCR"))
-
-model.nbLCR <- glm.nb(
-  count ~ hedging,
-  data = abundance_summary
-)
-summary(model.nbLCR)
-###########################
-abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (control)")
-
-abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (control)", "no hedge (random)", "GB", "WB", "SCR", "LCR"))
-
-model.nbC <- glm.nb(
-  count ~ hedging,
-  data = abundance_summary
-)
-summary(model.nbC)
-##############################
-abundance_summary$hedging <- relevel(abundance_summary$hedging, ref = "no hedge (random)")
-
-abundance_summary$hedging <- factor(abundance_summary$hedging, levels = c("no hedge (random)", "no hedge (control)", "GB", "WB", "SCR", "LCR"))
-
-model.nbR <- glm.nb(
-  count ~ hedging,
-  data = abundance_summary
-)
-summary(model.nbR)
-
-check_overdispersion(model.nbC)
-check_overdispersion(model.nbR)
-check_overdispersion(model.nbLCR)
-
-model_null <- glm.nb(
-  count ~ 1,
-  data = abundance_summary
-)
-
-anova(model_null, model.nbC, test = "LRT")
-library(emmeans)
-
-emmeans(model.nbC, pairwise ~ hedging, type = "response", adjust = "tukey")
 #############################################################################
 library(dplyr)
+library(emmeans)
+#library(MASS)
 
 richness_fam <- abundance_summary %>%
   group_by(ID, hedging) %>%
@@ -340,14 +121,31 @@ boxplot(
   data = richness_fam
 )
 
-model_richness <- glm.nb(
-  family_richness ~ hedging,
-  data = richness_fam
-)
+richness_fam$hedging <- as.factor(as.character(richness_fam$hedging))
+richness_fam$hedging <- factor(richness_fam$hedging, levels = c("LCR", "WB", "SCR", "GB", "no hedge (control)", "no hedge (random)"))
 
-summary(model_richness)
+richness_fam <- richness_fam %>% 
+  mutate(
+    hedging=recode(hedging,
+                        "no hedge (control)" = "No Hedge (Control)",
+                   "no hedge (random)" = "No Hedge (Random)")
+  )
 
-check_overdispersion(model_richness)
+richness_plot <- ggplot(data = richness_fam)+
+  geom_boxplot(aes(x = hedging, y = family_richness))+
+  #geom_point(aes(x = hedging, y = family_richness))+
+  labs(x = "Hedging Type", y = "Average Number of Families Observed")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+richness_plot
+
+# 2. Export as a high-resolution TIFF matching journal dimensions 
+ggsave( filename = "figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, # 300 DPI minimum for color, use 600 for pure line plots 
+        width = 5, # Single-column width in millimeters 
+        height = 4) # Adjust height as needed units = "mm", 
+        #compression = "lzw") # LZW compression reduces file size without losing quality )
+#dev.off()
 
 model_poisfam <- glm(
   family_richness ~ hedging,
@@ -366,12 +164,12 @@ model_richness_null <- glm(
 
 anova(
   model_richness_null,
-  model_richness,
+  model_poisfam,
   test = "Chisq"
 )
 
 richness_results <- emmeans(
-  model_richness,
+  model_poisfam,
   pairwise ~ hedging,
   type = "response",
   adjust = "tukey"
@@ -449,15 +247,22 @@ ab_clean_wide <- ab_clean %>%
     names_from = Family, 
     values_from = Absolute_Abundance
   )
-  
+
+ab_clean_wide <- ab_clean_wide %>% 
+  mutate(
+    hedging=recode(hedging,
+                   "no hedge (control)" = "No Hedge (Control)",
+                   "no hedge (random)" = "No Hedge (Random)")
+  )
 
 justrich <- ab_clean_wide  %>% 
   ungroup() %>% 
-  select("Acanthuridae":"Pomacentridae") 
+  dplyr::select("Acanthuridae":"Pomacentridae") 
 justrich[is.na(justrich)] <- 0
 env.data <- ab_clean_wide %>% 
   ungroup() %>% 
-  select(hedging)
+  dplyr::select(hedging)
+
 
 
 
@@ -468,16 +273,6 @@ sample_coords <- as.data.frame(scores(nmds_result, display = "sites"))
 
 sample_coords$hedging <- env.data$hedging 
 
-plot(nmds_result, type = "n", main = "NMDS of Family Richness by Hedging Type")
-colors <- as.numeric(as.factor(sample_coords$hedging))
-points(nmds_result, display = "sites", col = colors, pch = 16, cex = 1.5)
-
-ordiellipse(nmds_result, groups = sample_coords$hedging, 
-            kind = "sd", label = TRUE, col = 1:max(colors), lwd = 2)
-
-
-# m_com = community matrix (samples in rows, species/variables in columns)
-# pc$Type = factor containing group assignments
 ano <- anosim(justrich, env.data$hedging, distance = "bray", permutations = 9999)
 summary(ano)
 print(ano)
@@ -490,7 +285,6 @@ simper_result <- simper(comm = justrich, grouping = env.data$hedging, permutatio
 # View the summary output
 summary(simper_result)
 
-############################
 
 # 1. Setup shapes and labels
 group_factor <- as.factor(sample_coords$hedging)
@@ -527,8 +321,45 @@ legend(x = x_max * 1.45,
        title = "Hedging Type",
        bty = "n")
 
-# 6. Add the Stress Value (Bottom-Left)
-stress_text <- paste("Stress =", round(nmds_result$stress, 3))
-legend("bottomleft", legend = stress_text, bty = "n", cex = 0.8)
+plot_nmds <- function() {
+  # Setup factor and shapes
+  group_factor <- as.factor(sample_coords$hedging)
+  group_levels <- levels(group_factor)
+  shapes <- c(15, 16, 17, 18, 1, 2)[as.numeric(group_factor)] 
+  plot_color <- "black" 
+  
+  # Extract coordinates to establish limits
+  nmds_scores <- scores(nmds_result, display = "sites")
+  x_min <- min(nmds_scores[,1])
+  x_max <- max(nmds_scores[,1])
+  y_max <- max(nmds_scores[,2])
+  
+  # Draw the NMDS plot with a 40% expanded X-axis limit on the right
+  plot(nmds_result, type = "n", 
+       xlim = c(x_min, x_max + (x_max - x_min) * 0.40)) 
+  
+  # Add sites and ellipses
+  points(nmds_result, display = "sites", col = plot_color, pch = shapes, cex = 1.5)
+  ordiellipse(nmds_result, groups = sample_coords$hedging, 
+              kind = "sd", label = FALSE, col = "grey50", lwd = 1.5, lty = 2)
+  
+  # Add the Group Legend (Smaller and pushed all the way right)
+  legend(x = x_max * 1.45, 
+         y = y_max * 1.5, 
+         legend = group_levels, 
+         pch = c(15, 16, 17, 18, 1, 2)[1:length(group_levels)], 
+         col = plot_color, 
+         pt.cex = 1.2,       
+         cex = 0.8,          
+         title.cex = 1.2,    
+         xjust = 0,          
+         title = "Hedging Type",
+         bty = "n")
+}
 
+plot_nmds()
+
+tiff("Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
+plot_nmds()
+dev.off()
 
