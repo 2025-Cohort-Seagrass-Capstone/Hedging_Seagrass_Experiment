@@ -60,7 +60,7 @@ prob_graph <- function(pred, yvalJitter, tag, ylab){
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
     labels = c(
       "WB" = "WB",
-      "C" = "Control",
+      "C" = "No Hedge (Control)",
       "GB" = "GB",
       "M" = "SCR",
       "R" = "LCR"),
@@ -85,35 +85,6 @@ prob_graph <- function(pred, yvalJitter, tag, ylab){
   labs(color = "Hedging Type", tag = tag) +
   ylab(ylab)+
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
-  theme_minimal()+
-    theme(
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title.x = element_text(size = 25),
-    axis.title.y = element_text(size = 25),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 22),
-    plot.tag = element_text(size = 25, face = "bold"))
-    return(graph)}
-
-prob_graph_LCR <- function(pred, yvalJitter, tag, ylab){
-    graph <- ggplot({{pred}}, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1) +
-  geom_jitter(data = brewers_weekly_LCR, aes(x = day, y = {{yvalJitter}}, color = Hedging.Type),
-              alpha = 0.4, width = 0.7, height = 0.01) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
-              alpha = 0.2, color = NA) +
-scale_color_discrete(labels = c(
-    "W" = "WB",
-    "C" = "Control",
-    "G" = "GB",
-    "M" = "SCR",
-    "R" = "aLCR"
-  )) +
-  labs(color = "Hedging Type", tag = tag) +
-  ylab(ylab)+
-  xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
-  scale_fill_discrete(guide = "none") +
   theme_minimal()+
     theme(
     axis.text.x = element_text(size = 20),
@@ -191,7 +162,7 @@ u <- prob_graph(pred_U, `Grwth/U`, "C", "P(Under the Hedge)")
 
 combined_plot <- m / o / u
 combined_plot
-ggsave("Brewers Plots/Figures/Publication Ready/Figure_5.pdf", plot = combined_plot, dpi = 600, width = 8,height = 12,units = "in") 
+ggsave("Brewers Plots/Figures/Publication_Ready/Figure_5.pdf", plot = combined_plot, dpi = 600, width = 8,height = 12,units = "in") 
 
 ```
  the seagrass changing through time 
@@ -265,13 +236,12 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
   ylim(0, 1) +
   ylab(expression(paste(italic("H. stipulacea"), " at hedge (%)"))) +
   theme_bw() +
-  labs(pattern = "Hedging Type") +
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting"))) +
   scale_fill_manual(
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
     labels = c(
       "WB" = "WB",
-      "C" = "Control",
+      "C" = "No Hedge (Control)",
       "GB" = "GB",
       "M" = "SCR",
       "R" = "LCR"),
@@ -280,18 +250,17 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
     "GB" = "#2a788eff",
     "LCR" = "#414487ff",
     "SCR" = "#fde725ff",
-    "WB" = "#440154ff")) +
+    "WB" = "#440154ff"), name = "Hedging Type") +
   theme(
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title.x = element_text(size = 25),
-    axis.title.y = element_text(size = 25),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 22),
-    strip.text = element_text(size = 22)
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 10)
   )
 p
 
-ggsave( filename = "Figure_4.pdf", path = "Brewers Plots/Figures/Publication Ready/", plot = p, device = "pdf", dpi = 600, width = 7, height = 4)
+ggsave( filename = "Figure_4.pdf", path = "Brewers Plots/Figures/Publication_Ready/", plot = p, device = "pdf", dpi = 600, width = 8, height = 5)
 ```
 

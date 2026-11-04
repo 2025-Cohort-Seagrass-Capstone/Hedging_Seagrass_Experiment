@@ -1,6 +1,7 @@
 ## % TT and hedging type
 
 
+# Libraries ---------------------------------------------------------------
 library(tidyverse)
 library(readxl)
 library(sjPlot)
@@ -9,6 +10,8 @@ library(ggeffects)
 library(patchwork)
 library(car)
 
+
+# Data Import and Cleaning -------------------------------------------------------------
 
 # Data across all weeks 
 weekly_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
@@ -48,16 +51,48 @@ weekly_coverTT <- weekly_coverTT |>
 hedge_avg_TTcover <- weekly_coverTT |> 
   group_by(Date, Hedging_Type, day) |> 
   summarize(
-    mean_percent_cover = mean(`% Cover TT`))
+    mean_percent_cover = mean(`% Cover TT`)) |>
+  ungroup() |>
+    rename("No Hedge (Control)" = C)
 
-#initial look at data
-ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedging_Type))+
+facet_names <- c("C" = "No Hedge (Control)", "GB" = "GB", "LCR" = "LCR", "SCR" = "SCR", "WB" = "WB")
+                 
+#Mean percent cover of TT over day (7 weeks)
+TTpercent <- ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedging_Type))+
   geom_bar(stat="identity", position = position_dodge()) +
-  facet_wrap(~Hedging_Type) +
+  facet_wrap(~Hedging_Type,
+    labeller = as_labeller(facet_names)) +
   labs(
-    y = "Mean percent cover of TT (%)", 
-    x = "Day since first data collection"
-  )
+    y = expression(paste("Mean percent cover of ", italic("T. testudinum"), "(%)")), 
+    x = expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
+  scale_fill_manual(
+    breaks = c("C", "GB", "LCR", "SCR", "WB"),
+    labels = c(
+      "WB" = "WB",
+      "C" = "No Hedge (Control)",
+      "GB" = "GB",
+      "M" = "SCR",
+      "R" = "LCR"),
+    values = c(
+      "C" = "#22a884ff",
+      "GB" = "#2a788eff",
+      "LCR" = "#414487ff",
+      "SCR" = "#fde725ff",
+      "WB" = "#440154ff"),
+    guide = "none")+
+  theme_minimal()+
+  theme(
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    strip.background = element_rect(fill = "lightgray", color = "black"),
+    strip.text = element_text(size = 15))
+TTpercent
+ggsave("Brewers Plots/Figures/Publication_Ready/Figure_S1.png", plot = TTpercent, dpi = 600, width = 7,height = 4,units = "in") 
+  
 
 mean <- mean(hedge_avg_TTcover$mean_percent_cover)
 med <- median(hedge_avg_TTcover$mean_percent_cover)
