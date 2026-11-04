@@ -29,11 +29,11 @@ library(ggpattern)
 ## Data Wrangling
 ```{r Data Wrangling}
 # Data across all weeks 
-weekly <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly <- read_xlsx("Brewers_Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
 weekly$Date <- as.Date(weekly$Date)
 
 # Extracting the width, length, height one time measurements
-onetime <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
+onetime <- read_xlsx("Brewers_Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date)
 
 
@@ -157,7 +157,7 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
   )
 p
 
-ggsave( filename = "Figure_4.pdf", path = "Brewers Plots/Figures/Publication_Ready/", plot = p, device = "pdf", dpi = 600, width = 8, height = 5)
+ggsave( filename = "Figure_4.pdf", path = "Brewers_Plots/Figures/Publication_Ready/", plot = p, device = "pdf", dpi = 600, width = 8, height = 5)
 ```
 
 ## GLM for H. stipulacea encroachment
@@ -215,7 +215,7 @@ u <- prob_graph(pred_U, `Grwth/U`, "C", "P(Under the Hedge)")
 
 combined_plot <- m / o / u
 combined_plot
-ggsave("Brewers Plots/Figures/Publication_Ready/Figure_5.pdf", plot = combined_plot, dpi = 600, width = 8,height = 12,units = "in") 
+ggsave("Brewers_Plots/Figures/Publication_Ready/Figure_5.pdf", plot = combined_plot, dpi = 600, width = 8,height = 12,units = "in") 
 
 ```
  
@@ -223,7 +223,7 @@ ggsave("Brewers Plots/Figures/Publication_Ready/Figure_5.pdf", plot = combined_p
 Generalized linear models (GLMs) with binomial distributions and logit link functions assessing the effects of sampling day and hedging type on H. stipulacea encroachment.
 ```{r}
 brewers_weekly_LCR <- brewers_weekly |> 
-  mutate(Hedging.Type = recode(Hedging.Type, "LCR" = "aLCR"))
+  mutate(Hedging.Type = case_match(Hedging.Type, "LCR" ~ "aLCR", .default = Hedging.Type))
 
 ## Meets Hedge with time
 meetsmodeltime_LCR <- glm(`Meets.Hedge` ~ `Hedging.Type` + day, family = "binomial", data = brewers_weekly_LCR)
@@ -234,8 +234,8 @@ check_overdispersion(meetsmodeltime_LCR)
 
 pred_m_LCR <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
 
-m_lcr <- prob_graph_LCR(pred_m_LCR, Meets.Hedge, "A", "P(Meeting the Hedge)")
-
+m_lcr <- prob_graph(pred_m_LCR, Meets.Hedge, "A", "P(Meeting the Hedge)")
+m_lcr
 ## Growth Over with time
 gOmodeltime_LCR <- glm(`Grwth/O` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly_LCR)
 summary(gOmodeltime_LCR)
@@ -245,7 +245,7 @@ check_overdispersion(gOmodeltime_LCR)
 
 pred_O_LCR <- ggpredict(gOmodeltime_LCR, terms = c("day", "Hedging.Type"))
 
-o_lcr <- prob_graph_LCR(pred_O_LCR, `Grwth/O`, "B", "P(Over the Hedge)")
+o_lcr <- prob_graph(pred_O_LCR, `Grwth/O`, "B", "P(Over the Hedge)")
 
 ## Growth Under with time
 gUmodeltime_LCR <- glm(`Grwth/U` ~ `Hedging.Type` + as.numeric(day), family = "binomial", data = brewers_weekly_LCR)
@@ -256,13 +256,12 @@ check_overdispersion(gUmodeltime_LCR)
 
 pred_U_LCR <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
 
-u_lcr <- prob_graph_LCR(pred_U_LCR, `Grwth/U`, "C", "P(Under the Hedge)")
+u_lcr <- prob_graph(pred_U_LCR, `Grwth/U`, "C", "P(Under the Hedge)")
 
 ##***one figure Panel***
 
 LCR_combined_plot <- m_lcr / o_lcr / u_lcr
 LCR_combined_plot
-ggsave("Brewers Plots/Figures/LCR_combined_probability.png", plot = LCR_combined_plot, dpi = 300, width = 8,height = 12,units = "in") 
 
 ```
 
