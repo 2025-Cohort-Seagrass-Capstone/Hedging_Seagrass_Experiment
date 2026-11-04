@@ -13,6 +13,15 @@ library(sjPlot)
 library(performance)
 library(ggeffects)
 library(patchwork)
+library(ggpattern)
+
+# Color Pallete and Order of Hedging Types
+C = "#22a884ff"
+CRandom = "#7ad151ff"
+GB = "#2a788eff"
+LCR = "#414487ff"
+SCR = "#fde725ff"
+WB = "#440154ff"
 
 ```
 
@@ -47,21 +56,35 @@ brewers_weekly <- brewers_weekly |>
 prob_graph <- function(pred, yvalJitter, tag, ylab){
     graph <- ggplot({{pred}}, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1) +
+  scale_color_manual(
+    breaks = c("C", "GB", "LCR", "SCR", "WB"),
+    labels = c(
+      "WB" = "WB",
+      "C" = "Control",
+      "GB" = "GB",
+      "M" = "SCR",
+      "R" = "LCR"),
+      values = c(
+    "C" = "#22a884ff",
+    "GB" = "#2a788eff",
+    "LCR" = "#414487ff",
+    "SCR" = "#fde725ff",
+    "WB" = "#440154ff")) +
+    scale_fill_manual(
+      values = c(
+    "C" = "#22a884ff",
+    "GB" = "#2a788eff",
+    "LCR" = "#414487ff",
+    "SCR" = "#fde725ff",
+    "WB" = "#440154ff"),
+    guide = "none") +
   geom_jitter(data = brewers_weekly, aes(x = day, y = {{yvalJitter}}, color = Hedging.Type),
               alpha = 0.4, width = 0.7, height = 0.01) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group),
               alpha = 0.2, color = NA) +
-scale_color_discrete(labels = c(
-    "W" = "WB",
-    "C" = "Control",
-    "G" = "GB",
-    "M" = "SCR",
-    "R" = "LCR"
-  )) +
   labs(color = "Hedging Type", tag = tag) +
   ylab(ylab)+
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
-  scale_fill_discrete(guide = "none") +
   theme_minimal()+
     theme(
     axis.text.x = element_text(size = 20),
@@ -168,7 +191,7 @@ u <- prob_graph(pred_U, `Grwth/U`, "C", "P(Under the Hedge)")
 
 combined_plot <- m / o / u
 combined_plot
-ggsave("Brewers Plots/Figures/combined_probability.png", plot = combined_plot, dpi = 300, width = 8,height = 12,units = "in") 
+ggsave("Brewers Plots/Figures/Publication Ready/Figure_5.pdf", plot = combined_plot, dpi = 600, width = 8,height = 12,units = "in") 
 
 ```
  the seagrass changing through time 
@@ -242,22 +265,22 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
   ylim(0, 1) +
   ylab(expression(paste(italic("H. stipulacea"), " at hedge (%)"))) +
   theme_bw() +
-  labs(fill = "Hedging Type") +
+  labs(pattern = "Hedging Type") +
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting"))) +
-  scale_fill_manual(values = c(
-    "WB" = "#00B0F6",
-    "C" = "#F8766D",
-    "GB" = "#E76BF3",
-    "SCR" = "#A3A500",
-    "LCR" = "#00BF7D"
-  ),
-  labels = c(
-    "WB" = "WB",
-    "C" = "Control",
-    "GB" = "GB",
-    "SCR" = "SCR",
-    "LCR" = "LCR"
-  )) +
+  scale_fill_manual(
+    breaks = c("C", "GB", "LCR", "SCR", "WB"),
+    labels = c(
+      "WB" = "WB",
+      "C" = "Control",
+      "GB" = "GB",
+      "M" = "SCR",
+      "R" = "LCR"),
+      values = c(
+    "C" = "#22a884ff",
+    "GB" = "#2a788eff",
+    "LCR" = "#414487ff",
+    "SCR" = "#fde725ff",
+    "WB" = "#440154ff")) +
   theme(
     axis.text.x = element_text(size = 20),
     axis.text.y = element_text(size = 20),
@@ -268,5 +291,7 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
     strip.text = element_text(size = 22)
   )
 p
+
+ggsave( filename = "Figure_4.pdf", path = "Brewers Plots/Figures/Publication Ready/", plot = p, device = "pdf", dpi = 600, width = 7, height = 4)
 ```
 
