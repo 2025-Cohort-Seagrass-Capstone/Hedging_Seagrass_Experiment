@@ -126,22 +126,39 @@ richness_fam$hedging <- factor(richness_fam$hedging, levels = c("LCR", "WB", "SC
 
 richness_fam <- richness_fam %>% 
   mutate(
-    hedging=recode(hedging,
+    hedging=dplyr::recode(hedging,
                         "no hedge (control)" = "No Hedge (Control)",
                    "no hedge (random)" = "No Hedge (Random)")
   )
 
 richness_plot <- ggplot(data = richness_fam)+
-  geom_boxplot(aes(x = hedging, y = family_richness))+
+  geom_boxplot(aes(x = hedging, y = family_richness, fill = hedging))+
   #geom_point(aes(x = hedging, y = family_richness))+
   labs(x = "Hedging Type", y = "Average Number of Families Observed")+
   theme_bw()+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))+
+  theme(legend.position = "none")+
+  scale_fill_manual(
+    breaks = c("No Hedge (Control)", "No Hedge (Random)", "GB", "LCR", "SCR", "WB"),
+    labels = c(
+      "WB" = "WB",
+      "No Hedge (Control)" = "No Hedge (Control)",
+      "No Hedge (Random)" = "No Hedge (Random)",
+      "GB" = "GB",
+      "M" = "SCR",
+      "R" = "LCR"),
+    values = c(
+      "No Hedge (Control)" = "#22a884ff",
+      "No Hedge (Random)" = "#7ad151ff",
+      "GB" = "#2a788eff",
+      "LCR" = "#414487ff",
+      "SCR" = "#fde725ff",
+      "WB" = "#440154ff"))
 
 richness_plot
 
 # 2. Export as a high-resolution TIFF matching journal dimensions 
-ggsave( filename = "figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, # 300 DPI minimum for color, use 600 for pure line plots 
+ggsave( filename = "Brewers Plots/Figures/Publication_Ready/Figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, # 300 DPI minimum for color, use 600 for pure line plots 
         width = 5, # Single-column width in millimeters 
         height = 4) # Adjust height as needed units = "mm", 
         #compression = "lzw") # LZW compression reduces file size without losing quality )
