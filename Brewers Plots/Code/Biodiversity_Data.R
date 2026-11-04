@@ -179,7 +179,7 @@ richness_results
 
 #########################################
 
-install.packages("vegan")  # Run once
+#install.packages("vegan")  # Run once
 library(dplyr)
 library(vegan) 
 family_counts <- abundance_summary %>%
@@ -248,9 +248,11 @@ ab_clean_wide <- ab_clean %>%
     values_from = Absolute_Abundance
   )
 
+
 ab_clean_wide <- ab_clean_wide %>% 
+  ungroup() %>% 
   mutate(
-    hedging=recode(hedging,
+    hedging = dplyr::recode(hedging,
                    "no hedge (control)" = "No Hedge (Control)",
                    "no hedge (random)" = "No Hedge (Random)")
   )
@@ -271,7 +273,9 @@ print(nmds_result$stress)
 sample_coords <- as.data.frame(scores(nmds_result, display = "sites"))
 
 
-sample_coords$hedging <- env.data$hedging 
+
+
+sample_coords$hedging <- env.data$hedging
 
 ano <- anosim(justrich, env.data$hedging, distance = "bray", permutations = 9999)
 summary(ano)
@@ -323,9 +327,15 @@ legend(x = x_max * 1.45,
 
 plot_nmds <- function() {
   # Setup factor and shapes
+  
+  custom_order <- c("No Hedge (Control)", "No Hedge (Random)", "GB", "LCR", "SCR", "WB") 
+  
+  # Set the data factor to strictly use your manual order
+  sample_coords$hedging <- factor(sample_coords$hedging, levels = custom_order)
+  
   group_factor <- as.factor(sample_coords$hedging)
   group_levels <- levels(group_factor)
-  shapes <- c(15, 16, 17, 18, 1, 2)[as.numeric(group_factor)] 
+  shapes <- c(1, 2, 17, 18, 15, 16)[as.numeric(group_factor)] 
   plot_color <- "black" 
   
   # Extract coordinates to establish limits
@@ -347,7 +357,7 @@ plot_nmds <- function() {
   legend(x = x_max * 1.45, 
          y = y_max * 1.5, 
          legend = group_levels, 
-         pch = c(15, 16, 17, 18, 1, 2)[1:length(group_levels)], 
+         pch = c(1, 2, 17, 18, 15, 16)[1:length(group_levels)], 
          col = plot_color, 
          pt.cex = 1.2,       
          cex = 0.8,          
@@ -359,7 +369,11 @@ plot_nmds <- function() {
 
 plot_nmds()
 
-tiff("Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
+
+#####################################
+
+
+tiff("Brewers Plots/Figures/Publication_Ready/Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
 plot_nmds()
 dev.off()
 
