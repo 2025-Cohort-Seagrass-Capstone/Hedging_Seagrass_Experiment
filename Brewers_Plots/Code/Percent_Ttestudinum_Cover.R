@@ -15,11 +15,11 @@ library(car)
 # Data Import and Cleaning -------------------------------------------------------------
 
 # Data across all weeks/months
-weekly_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
+weekly_data <- read_xlsx("Brewers_Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
 weekly_data$Date <- as.Date(weekly_data$Date)
   
 # Extracting the width, length, height one time measurements
-onetime_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
+onetime_data <- read_xlsx("Brewers_Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date) |> 
   rename("Hedging_Type" = "Hedging Type")
   
@@ -54,9 +54,7 @@ weekly_coverTT <- weekly_coverTT |>
 hedge_avg_TTcover <- weekly_coverTT |> 
   group_by(Date, Hedging_Type, day) |> 
   summarize(
-    mean_percent_cover = mean(`% Cover TT`)) |>
-  ungroup() |>
-    rename("No Hedge (Control)" = C)
+    mean_percent_cover = mean(`% Cover TT`))
 
 facet_names <- c("C" = "No Hedge (Control)", "GB" = "GB", "LCR" = "LCR", "SCR" = "SCR", "WB" = "WB")
 
@@ -95,7 +93,7 @@ TTpercent <- ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedgi
     strip.background = element_rect(fill = "lightgray", color = "black"),
     strip.text = element_text(size = 15))
 TTpercent
-ggsave("Brewers Plots/Figures/Publication_Ready/Figure_S1.png", plot = TTpercent, dpi = 600, width = 7,height = 4,units = "in") 
+ggsave("Brewers_Plots/Figures/Publication_Ready/Figure_S1.png", plot = TTpercent, dpi = 600, width = 7,height = 4,units = "in") 
   
 
 # Distribution of data -------------------------------------------------------------
@@ -143,10 +141,10 @@ shapiro.test(first_last$mean_percent_cover)
 first_last$log_mean_per_cover <- log(first_last$mean_percent_cover)
 
 # Normality of residuals = Met after Log tranformation
-mean <- mean(FL$`% Cover TT`)
-med <- median(FL$`% Cover TT`)
+mean <- mean(first_last$log_mean_per_cover)
+med <- median(first_last$log_mean_per_cover)
 
-ggplot(FL, aes(x = `% Cover TT`)) +
+ggplot(first_last, aes(x = log_mean_per_cover)) +
   geom_histogram(bins = 30, fill = "lightblue", color = "black", alpha = 0.6) +
   geom_vline(aes(xintercept = mean, color = "Mean"), linewidth = 1.2) +
   geom_vline(aes(xintercept = med, color = "Median"), linetype = "dashed", linewidth = 1.2) +
@@ -154,7 +152,7 @@ ggplot(FL, aes(x = `% Cover TT`)) +
 #Bi-model, right & positively skewed
 
 # Shapiro-Wilk normality test
-shapiro.test(FL$`% Cover TT`)
+shapiro.test(first_last$log_mean_per_cover)
 # data:  first_last$log_mean_per_cover
 # W = 0.90622, p-value = 0.256
 
