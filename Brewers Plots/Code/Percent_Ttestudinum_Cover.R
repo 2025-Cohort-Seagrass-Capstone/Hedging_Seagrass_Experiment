@@ -1,5 +1,6 @@
-## % TT and hedging type
-
+## Percent_Ttestudinum_Cover
+# Author: Savanna R. Saunders
+# Description: Testing for differences in percent T. testudinum cover between the first and last weeks of the 7 week monitoring period.
 
 # Libraries ---------------------------------------------------------------
 library(tidyverse)
@@ -13,11 +14,11 @@ library(car)
 
 # Data Import and Cleaning -------------------------------------------------------------
 
-# Data across all weeks 
+# Data across all weeks/months
 weekly_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "Weekly Brewers Bay monitoring")
 weekly_data$Date <- as.Date(weekly_data$Date)
   
-  # Extracting the width, length, height one time measurements
+# Extracting the width, length, height one time measurements
 onetime_data <- read_xlsx("Brewers Plots/DataFiles/Capstone Data_10_14.xlsx", sheet = "One Time Measurements") %>% 
   select(-Date) |> 
   rename("Hedging_Type" = "Hedging Type")
@@ -35,11 +36,13 @@ weekly_coverTT$Hedging_Type[weekly_coverTT$Hedging_Type == "B"] <- "W"
 
 # Calulating the days since the start of the data collection
 weekly_coverTT$day <- weekly_coverTT$Date - weekly_coverTT$Date[1]
-# number of days since starting is now the response variable
+# Number of days since starting is now the response variable
 weekly_coverTT$day <- as.numeric(weekly_coverTT$day)
 
+# Data Interpretation -------------------------------------------------------------
 ## Dealing with <1 values in % Cover TT
 # Since it is unknown the exact value <1 (left sensored), best practice is to change to 0.5 (Helsel, D.R. (1990). Less than obvious: Statistical treatment of data below the detection limit. Environmental Science & Technology, 24(12), 1766–1774.) 
+
 # Change all values in % cover TT to numeric
 weekly_coverTT <- weekly_coverTT |> 
   mutate(`% Cover TT`= case_when(
@@ -47,7 +50,7 @@ weekly_coverTT <- weekly_coverTT |>
     TRUE ~ as.numeric(`% Cover TT`)
   )) 
 
-# take the mean of percent TT cover for each hedging type each data collection week
+# Take the mean of percent TT cover for each hedging type each data collection week
 hedge_avg_TTcover <- weekly_coverTT |> 
   group_by(Date, Hedging_Type, day) |> 
   summarize(
@@ -56,7 +59,8 @@ hedge_avg_TTcover <- weekly_coverTT |>
     rename("No Hedge (Control)" = C)
 
 facet_names <- c("C" = "No Hedge (Control)", "GB" = "GB", "LCR" = "LCR", "SCR" = "SCR", "WB" = "WB")
-                 
+
+# Graphing -------------------------------------------------------------
 #Mean percent cover of TT over day (7 weeks)
 TTpercent <- ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedging_Type))+
   geom_bar(stat="identity", position = position_dodge()) +
@@ -94,6 +98,7 @@ TTpercent
 ggsave("Brewers Plots/Figures/Publication_Ready/Figure_S1.png", plot = TTpercent, dpi = 600, width = 7,height = 4,units = "in") 
   
 
+# Distribution of data -------------------------------------------------------------
 mean <- mean(hedge_avg_TTcover$mean_percent_cover)
 med <- median(hedge_avg_TTcover$mean_percent_cover)
 
@@ -102,42 +107,6 @@ ggplot(hedge_avg_TTcover, aes(x = mean_percent_cover)) +
   geom_vline(aes(xintercept = mean, color = "Mean"), linewidth = 1.2) +
   geom_vline(aes(xintercept = med, color = "Median"), linetype = "dashed", linewidth = 1.2) +
   labs(y = "frequency")
-
-# Raw TT t-test -----------------------------------------------------------
-# t-test on raw TT cover data between first and last week
-
-FL <- weekly_coverTT |> 
-  filter(Date %in% as.Date(c("2026-02-28", "2026-04-18"))) 
-
-FL$`% Cover TT` <- FL$`% Cover TT`/100
-
-# did logit bc some values are 0 (if log then the result would be -Inf)
-FL <- FL |> 
-  mutate(
-    week = case_when(
-      Date == "2026-02-28" ~ "first",
-      Date == "2026-04-18" ~ "last",
-      TRUE  ~ "other"),  
-    logit_perc_cover = logit(`% Cover TT`, percents = TRUE))
-
-shapiro.test(FL$logit_perc_cover)
-# data:  FL$`% Cover TT`
-# W = 0.78469, p-value = 3.491e-05
-
-# After Transformation
-# data:  FL$logit_perc_cover
-# W = 0.84496, p-value = 0.0004871
-
-t.test(logit_perc_cover ~ week, data = FL)
-# Welch Two Sample t-test
-# data:  logit_perc_cover by week
-# t = 6.2639, df = 16.199, p-value = 1.068e-05
-# alternative hypothesis: true difference in means between group first and group last is not equal to 0
-# 95 percent confidence interval:
-#   0.5727255 1.1578142
-# sample estimates:
-#   mean in group first  mean in group last 
-# -2.575413           -3.440682
 
 
 # Univariate Statistics --------------------------------------------------
@@ -206,7 +175,7 @@ t.test(log_mean_per_cover ~ week, data = first_last)
 #   mean in group first  mean in group last 
 # 1.6096866          -0.4759092
 
-# Not using ---------------------------------------------------------------
+# Not Used in Pub ---------------------------------------------------------------
 
 ##Presence absence: 1 if TT present (>0), 0 if TT absent (0)
 weekly_coverTT$TTpresent <- ifelse(weekly_coverTT$`% Cover TT` > 0, 1, 0)
@@ -249,4 +218,40 @@ prob_t <- ggplot(pred_TT, aes(x = x, y = predicted, color = group)) +
       legend.title = element_text(size = 22),
       plot.tag = element_text(size = 25, face = "bold"))
 prob_t
-## do not 
+
+# Raw TT t-test 
+# t-test on raw TT cover data between first and last week
+
+FL <- weekly_coverTT |> 
+  filter(Date %in% as.Date(c("2026-02-28", "2026-04-18"))) 
+
+FL$`% Cover TT` <- FL$`% Cover TT`/100
+
+# did logit bc some values are 0 (if log then the result would be -Inf)
+FL <- FL |> 
+  mutate(
+    week = case_when(
+      Date == "2026-02-28" ~ "first",
+      Date == "2026-04-18" ~ "last",
+      TRUE  ~ "other"),  
+    logit_perc_cover = logit(`% Cover TT`, percents = TRUE))
+
+shapiro.test(FL$logit_perc_cover)
+# data:  FL$`% Cover TT`
+# W = 0.78469, p-value = 3.491e-05
+
+# After Transformation
+# data:  FL$logit_perc_cover
+# W = 0.84496, p-value = 0.0004871
+
+t.test(logit_perc_cover ~ week, data = FL)
+# Welch Two Sample t-test
+# data:  logit_perc_cover by week
+# t = 6.2639, df = 16.199, p-value = 1.068e-05
+# alternative hypothesis: true difference in means between group first and group last is not equal to 0
+# 95 percent confidence interval:
+#   0.5727255 1.1578142
+# sample estimates:
+#   mean in group first  mean in group last 
+# -2.575413           -3.440682
+
