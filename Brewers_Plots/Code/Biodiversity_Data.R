@@ -9,12 +9,12 @@ library(ggeffects)
 library(patchwork)
 
 
-excel_sheets("Brewers Plots/DataFiles/Capstone Fish Counts.xlsx")
-fishraw <- read_excel("Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
-classraw <- read_excel("Brewers Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
+excel_sheets("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx")
+fishraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
+classraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
 
-excel_sheets("Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
-fishraw2 <- read_excel("Brewers Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
+excel_sheets("Brewers_Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
+fishraw2 <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
 
 ##################################################################################
 
@@ -114,8 +114,8 @@ richness_fam$hedging <- factor(richness_fam$hedging, levels = c("LCR", "WB", "SC
 richness_fam <- richness_fam %>% 
   mutate(
     hedging=dplyr::recode(hedging,
-                        "no hedge (control)" = "No Hedge (Control)",
-                   "no hedge (random)" = "No Hedge (Random)")
+                        "no hedge (control)" = "Experimental Control",
+                   "no hedge (random)" = "Procedural Control")
   )
 
 richness_plot <- ggplot(data = richness_fam)+
@@ -125,17 +125,17 @@ richness_plot <- ggplot(data = richness_fam)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))+
   theme(legend.position = "none")+
   scale_fill_manual(
-    breaks = c("No Hedge (Control)", "No Hedge (Random)", "GB", "LCR", "SCR", "WB"),
+    breaks = c("Experimental Control", "Procedural Control", "GB", "LCR", "SCR", "WB"),
     labels = c(
       "WB" = "WB",
-      "No Hedge (Control)" = "No Hedge (Control)",
-      "No Hedge (Random)" = "No Hedge (Random)",
+      "Experimental Control" = "Experimental Control",
+      "Procedural Control" = "Procedural Control",
       "GB" = "GB",
       "M" = "SCR",
       "R" = "LCR"),
     values = c(
-      "No Hedge (Control)" = "#22a884ff",
-      "No Hedge (Random)" = "#7ad151ff",
+      "Experimental Control" = "#22a884ff",
+      "Procedural Control" = "#7ad151ff",
       "GB" = "#2a788eff",
       "LCR" = "#414487ff",
       "SCR" = "#fde725ff",
@@ -144,7 +144,7 @@ richness_plot <- ggplot(data = richness_fam)+
 richness_plot
 
 #Export as a high-resolution TIFF matching journal dimensions 
-ggsave( filename = "Brewers Plots/Figures/Publication_Ready/Figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, 
+ggsave( filename = "Brewers_Plots/Figures/Publication_Ready/Figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, 
         width = 5, 
         height = 4) 
 
@@ -324,7 +324,7 @@ summary(simper_result)
 #####################################
 
 
-tiff("Brewers Plots/Figures/Publication_Ready/Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
+tiff("Brewers_Plots/Figures/Publication_Ready/Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
 plot_nmds()
 dev.off()
 

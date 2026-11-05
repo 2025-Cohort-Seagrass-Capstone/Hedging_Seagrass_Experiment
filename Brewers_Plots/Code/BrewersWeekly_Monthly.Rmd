@@ -17,8 +17,8 @@ library(patchwork)
 library(ggpattern)
 
 # Color Palette and Order of Hedging Types
-# No Hedge (Control) = "#22a884ff"
-# No Hedge (Random) = "#7ad151ff"
+# Experimental Control = "#22a884ff"
+# Procedural Control = "#7ad151ff"
 # GB = "#2a788eff"
 # LCR = "#414487ff"
 # SCR = "#fde725ff"
@@ -62,7 +62,7 @@ prob_graph <- function(pred, yvalJitter, tag, ylab){
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
     labels = c(
       "WB" = "WB",
-      "C" = "No Hedge (Control)",
+      "C" = "Experimental Control",
       "GB" = "GB",
       "M" = "SCR",
       "R" = "LCR"),
@@ -137,7 +137,7 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
     labels = c(
       "WB" = "WB",
-      "C" = "No Hedge (Control)",
+      "C" = "Experimental Control",
       "GB" = "GB",
       "M" = "SCR",
       "R" = "LCR"),

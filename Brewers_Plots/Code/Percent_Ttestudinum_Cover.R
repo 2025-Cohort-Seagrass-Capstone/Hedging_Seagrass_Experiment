@@ -56,7 +56,7 @@ hedge_avg_TTcover <- weekly_coverTT |>
   summarize(
     mean_percent_cover = mean(`% Cover TT`))
 
-facet_names <- c("C" = "No Hedge (Control)", "GB" = "GB", "LCR" = "LCR", "SCR" = "SCR", "WB" = "WB")
+facet_names <- c("C" = "Experimental Control", "GB" = "GB", "LCR" = "LCR", "SCR" = "SCR", "WB" = "WB")
 
 # Graphing -------------------------------------------------------------
 #Mean percent cover of TT over day (7 weeks)
@@ -71,7 +71,7 @@ TTpercent <- ggplot(hedge_avg_TTcover, aes(day, mean_percent_cover, fill = Hedgi
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
     labels = c(
       "WB" = "WB",
-      "C" = "No Hedge (Control)",
+      "C" = "Experimental Control",
       "GB" = "GB",
       "M" = "SCR",
       "R" = "LCR"),
