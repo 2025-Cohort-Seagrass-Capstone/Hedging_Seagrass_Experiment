@@ -15,7 +15,7 @@ library(car)
 
 # Data Import -------------------------------------------------------------
 
-<<<<<<< HEAD
+
 excel_sheets("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx")
 fishraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
 classraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
@@ -35,11 +35,11 @@ fish_long <- data.frame(
   count = unlist(fishraw %>% select(starts_with("count")), use.names = FALSE),
   ID = rep(fishraw$Plot_ID, times = num_pairs)
 )
-=======
+
 excel_sheets("Brewers_Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
 fishraw2 <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
 classraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
->>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
+
 
 # Data Cleaning -------------------------------------------------------------
 
@@ -120,20 +120,17 @@ boxplot(
 )
 
 richness_fam$hedging <- as.factor(as.character(richness_fam$hedging))
-richness_fam$hedging <- factor(richness_fam$hedging, levels = c("LCR", "WB", "SCR", "GB", "no hedge (control)", "no hedge (random)"))
+richness_fam$hedging <- factor(richness_fam$hedging, levels = c("no hedge (control)", "no hedge (random)", "GB", "LCR", "SCR", "WB"))
 
 #Rename for publication#
 richness_fam <- richness_fam %>% 
   mutate(
     hedging=dplyr::recode(hedging,
-<<<<<<< HEAD
+
                         "no hedge (control)" = "Experimental Control",
                    "no hedge (random)" = "Procedural Control")
   )
-=======
-                        "no hedge (control)" = "No Hedge (Control)",
-                   "no hedge (random)" = "No Hedge (Random)"))
->>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
+
 
 #Publication Graph#
 richness_plot <- ggplot(data = richness_fam)+
@@ -161,11 +158,10 @@ richness_plot <- ggplot(data = richness_fam)+
 
 richness_plot
 
-<<<<<<< HEAD
+
 #Export as a high-resolution TIFF matching journal dimensions 
-=======
+
 #Export as a high-resolution TIFF matching journal dimensions#
->>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
 ggsave( filename = "Brewers_Plots/Figures/Publication_Ready/Figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, 
         width = 5, 
         height = 4) 
@@ -265,8 +261,8 @@ ab_clean_wide <- ab_clean_wide %>%
   ungroup() %>% 
   mutate(
     hedging = dplyr::recode(hedging,
-                   "no hedge (control)" = "No Hedge (Control)",
-                   "no hedge (random)" = "No Hedge (Random)"))
+                   "no hedge (control)" = "Experimental Control",
+                   "no hedge (random)" = "Procedural Control"))
 
 justrich <- ab_clean_wide  %>% 
   ungroup() %>% 
@@ -288,7 +284,7 @@ sample_coords$hedging <- env.data$hedging
 #Function of the Plot#
 plot_nmds <- function() {
   
-  custom_order <- c("No Hedge (Control)", "No Hedge (Random)", "GB", "LCR", "SCR", "WB") 
+  custom_order <- c("Experimental Control", "Procedural Control", "GB", "LCR", "SCR", "WB") 
   sample_coords$hedging <- factor(sample_coords$hedging, levels = custom_order)
   
   group_factor <- as.factor(sample_coords$hedging)
@@ -336,15 +332,13 @@ print(ano)
 simper_result <- simper(comm = justrich, grouping = env.data$hedging, permutations = 999)
 summary(simper_result)
 
-<<<<<<< HEAD
 
 #####################################
 
 
-=======
+
 #Publication worthy export#
->>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
-tiff("Brewers_Plots/Figures/Publication_Ready/Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
+tiff("Brewers_Plots/Figures/Publication_Ready/Figure_7.tiff", width = 6.8, height = 4.5, units = "in", res = 600, compression = "lzw")
 plot_nmds()
 dev.off()
 
