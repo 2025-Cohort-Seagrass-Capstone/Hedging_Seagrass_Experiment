@@ -1,8 +1,8 @@
 # Hedging_Seagrass_Experiment
 
-Description: Statistical analysis of seagrass data for the Hedging Materials for *Thalassia testudinum* Nursery Establishment and *Halophila stipulacea* Management in the Caribbean experimental project performed in Brewers Bay, USVI at the University of the Virgin Islands.
+**Description:** Statistical analysis of seagrass data for the Hedging Materials for *Thalassia testudinum* Nursery Establishment and *Halophila stipulacea* Management in the Caribbean experimental project performed in Brewers Bay, USVI at the University of the Virgin Islands.
 
-Collaborators: Savanna R. Saunders and Adam Krogmann
+**Collaborators:** Savanna R. Saunders and Adam Krogmann
 
 # Folders
 

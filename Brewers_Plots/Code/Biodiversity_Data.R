@@ -1,14 +1,21 @@
-#Adam Krogmann
-#Oct 18, 2026
+## Biodiversity_Data
+# Author: Adam Krogmann
+# Description: Testing for differences in family richness and diversity between hedging types.
 
+# Libraries ---------------------------------------------------------------
 library(tidyverse)
 library(readxl)
 library(sjPlot)
 library(performance)
 library(ggeffects)
 library(patchwork)
+library(emmeans)
+library(vegan)
+library(car)
 
+# Data Import -------------------------------------------------------------
 
+<<<<<<< HEAD
 excel_sheets("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx")
 fishraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishCounts")
 classraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
@@ -28,23 +35,28 @@ fish_long <- data.frame(
   count = unlist(fishraw %>% select(starts_with("count")), use.names = FALSE),
   ID = rep(fishraw$Plot_ID, times = num_pairs)
 )
+=======
+excel_sheets("Brewers_Plots/DataFiles/Capstone Fish Counts RandC.xlsx")
+fishraw2 <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts RandC.xlsx", sheet = "FishCounts")
+classraw <- read_excel("Brewers_Plots/DataFiles/Capstone Fish Counts.xlsx", sheet = "FishMetadata")
+>>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
 
+# Data Cleaning -------------------------------------------------------------
 
 num_pairs2 <- ncol(fishraw2 %>% select(starts_with("species")))
-
 
 fish_long2 <- data.frame(
   hedging = rep(fishraw2$Hedging_Type, times = num_pairs2), 
   species = unlist(fishraw2 %>% select(starts_with("species")), use.names = FALSE),
   count   = unlist(fishraw2 %>% select(starts_with("count")), use.names = FALSE),
-  ID = rep(fishraw$Plot_ID, times = num_pairs)
+  ID = rep(fishraw2$Plot_ID, times = num_pairs2)
 )
 
 #filter out a third no hedge value
 fish_long_cooked <- fish_long2 %>% 
   dplyr::filter(fish_long2$hedging != "no hedge")
 
-unique(fish_long2$hedging)
+unique(fish_long_cooked$hedging)
 
 #Arrange the hedging types to be consistent
 fish_long_cooked$hedging <- factor(fish_long_cooked$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
@@ -58,20 +70,7 @@ fish_average <- fish_long_cooked %>%
 
 fish_average$hedging <- factor(fish_average$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
 
-#####################################################################################
-
-unique_counts <- abundance_summary %>%
-  group_by(hedging) %>%
-  summarize(unique_family_count = n_distinct(Family))
-
-#Arrange the hedging types to be consistent
-unique_counts$hedging <- factor(unique_counts$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
-
-#Total counts
-ggplot(data = unique_counts)+
-  geom_col(aes(x = unique_family_count, y = hedging))
-
-######################################################################################
+##Join with Class+ family+ Order data###############################
 classraw <- classraw %>% 
   rename(species = Common_Name)
 
@@ -85,24 +84,36 @@ abundance_summary <- joined_class %>%
   group_by(hedging, species) %>%
   mutate(
     Absolute_Abundance = sum(count),
-    Relative_Abundance = Absolute_Abundance / first(Total_Site_Abundance)
-  )
+    Relative_Abundance = Absolute_Abundance / first(Total_Site_Abundance))
 
-#############################################################################
-library(dplyr)
-library(emmeans)
-#library(MASS)
+# Statistics and graphs -------------------------------------------------------------
+
+###Find and graph total number of unique family counts##################################################
+
+#Find total number of unique counts#
+unique_counts <- abundance_summary %>%
+  group_by(hedging) %>%
+  summarize(unique_family_count = n_distinct(Family))
+
+#Arrange the hedging types to be consistent#
+unique_counts$hedging <- factor(unique_counts$hedging, levels = c("LCR", "SCR", "WB", "GB", "no hedge (control)", "no hedge (random)"))
+
+#Total counts preliminary graph#
+ggplot(data = unique_counts)+
+  geom_col(aes(x = unique_family_count, y = hedging))
+
+###Statistics for Family Richness#########################################################
 
 richness_fam <- abundance_summary %>%
   group_by(ID, hedging) %>%
   dplyr::summarise(
     family_richness = n_distinct(Family, na.rm = TRUE),
-    .groups = "drop"
-  )
+    .groups = "drop")
 
 str(richness_fam)
 summary(richness_fam$family_richness)
 
+#Test Boxplot#
 boxplot(
   family_richness ~ hedging,
   data = richness_fam
@@ -111,13 +122,20 @@ boxplot(
 richness_fam$hedging <- as.factor(as.character(richness_fam$hedging))
 richness_fam$hedging <- factor(richness_fam$hedging, levels = c("LCR", "WB", "SCR", "GB", "no hedge (control)", "no hedge (random)"))
 
+#Rename for publication#
 richness_fam <- richness_fam %>% 
   mutate(
     hedging=dplyr::recode(hedging,
+<<<<<<< HEAD
                         "no hedge (control)" = "Experimental Control",
                    "no hedge (random)" = "Procedural Control")
   )
+=======
+                        "no hedge (control)" = "No Hedge (Control)",
+                   "no hedge (random)" = "No Hedge (Random)"))
+>>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
 
+#Publication Graph#
 richness_plot <- ggplot(data = richness_fam)+
   geom_boxplot(aes(x = hedging, y = family_richness, fill = hedging))+
   labs(x = "Hedging Type", y = "Average Number of Families Observed")+
@@ -143,45 +161,44 @@ richness_plot <- ggplot(data = richness_fam)+
 
 richness_plot
 
+<<<<<<< HEAD
 #Export as a high-resolution TIFF matching journal dimensions 
+=======
+#Export as a high-resolution TIFF matching journal dimensions#
+>>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
 ggsave( filename = "Brewers_Plots/Figures/Publication_Ready/Figure_6.pdf", plot = richness_plot, device = "pdf", dpi = 600, 
         width = 5, 
         height = 4) 
 
+###Look at statistics for the graph###
 model_poisfam <- glm(
   family_richness ~ hedging,
   family = poisson(link = "log"),
-  data = richness_fam
-)
+  data = richness_fam)
+
 summary(model_poisfam)
 check_overdispersion(model_poisfam)
-
 
 model_richness_null <- glm(
   family_richness ~ 1,
   family = poisson(link = "log"),
-  data = richness_fam
-)
+  data = richness_fam)
 
 anova(
   model_richness_null,
   model_poisfam,
-  test = "Chisq"
-)
+  test = "Chisq")
 
 richness_results <- emmeans(
   model_poisfam,
   pairwise ~ hedging,
   type = "response",
-  adjust = "tukey"
-)
+  adjust = "tukey")
+
 summary(richness_results)
 richness_results
 
-#########################################
-
-library(dplyr)
-library(vegan) 
+###Look at shannon diversity of family#############################
 
 family_counts <- abundance_summary %>%
   count(ID, hedging, Family, name = "countfam")
@@ -200,9 +217,10 @@ shannon_results <- shannon_results %>%
   left_join(
     abundance_summary %>% distinct(ID, hedging),
     by = "ID")
-
+#Preliminary Plot#
 boxplot(shannon ~ hedging, data = shannon_results)
 
+#Check Assumptions#
 shapiro.test(shannon_results$shannon)
 
 model_shannon <- aov(
@@ -213,10 +231,10 @@ shapiro.test(residuals(model_shannon))
 qqnorm(residuals(model_shannon))
 qqline(residuals(model_shannon), col = "red")
 
-library(car)
 leveneTest(shannon ~ hedging, data = shannon_results)
-kruskal.test(shannon ~ hedging, data = shannon_results)
 
+#Statistics#
+kruskal.test(shannon ~ hedging, data = shannon_results)
 
 pairwise.wilcox.test(
   shannon_results$shannon,
@@ -230,9 +248,7 @@ shannon_results %>%
     mean_shannon = mean(shannon, na.rm = TRUE),
     n = dplyr::n())
 
-#############################################################
-library(vegan)
-library(dplyr)
+###NMDS creation and analysis#################################
 
 ab_clean <- abundance_summary %>% 
 group_by(Family, hedging, ID) %>%
@@ -244,7 +260,6 @@ ab_clean_wide <- ab_clean %>%
   pivot_wider(
     names_from = Family, 
     values_from = Absolute_Abundance)
-
 
 ab_clean_wide <- ab_clean_wide %>% 
   ungroup() %>% 
@@ -261,14 +276,16 @@ env.data <- ab_clean_wide %>%
   ungroup() %>% 
   dplyr::select(hedging)
 
-
+#Results#
 nmds_result <- metaMDS(justrich, distance = "bray", k = 2, trymax = 200)
+#Stress Test#
 print(nmds_result$stress)
-sample_coords <- as.data.frame(scores(nmds_result, display = "sites"))
 
+sample_coords <- as.data.frame(scores(nmds_result, display = "sites"))
 
 sample_coords$hedging <- env.data$hedging
 
+#Function of the Plot#
 plot_nmds <- function() {
   
   custom_order <- c("No Hedge (Control)", "No Hedge (Random)", "GB", "LCR", "SCR", "WB") 
@@ -307,23 +324,26 @@ plot_nmds <- function() {
          title = "Hedging Type",
          bty = "n")
 }
-
+#Run the plot function#
 plot_nmds()
 
-#ANOSIM
+#ANOSIM#
 ano <- anosim(justrich, env.data$hedging, distance = "bray", permutations = 9999)
 summary(ano)
 print(ano)
 
-
-# Run the SIMPER analysis
+#SIMPER analysis#
 simper_result <- simper(comm = justrich, grouping = env.data$hedging, permutations = 999)
 summary(simper_result)
 
+<<<<<<< HEAD
 
 #####################################
 
 
+=======
+#Publication worthy export#
+>>>>>>> 2af5fbb618291f3a4162d6ba95fc796b9fcfa1e5
 tiff("Brewers_Plots/Figures/Publication_Ready/Figure_7.tiff", width = 6.7, height = 4.5, units = "in", res = 600, compression = "lzw")
 plot_nmds()
 dev.off()
