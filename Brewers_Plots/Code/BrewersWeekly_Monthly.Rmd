@@ -89,13 +89,13 @@ prob_graph <- function(pred, yvalJitter, tag, ylab){
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting")))+
   theme_minimal()+
     theme(
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    axis.title.x = element_text(size = 25),
-    axis.title.y = element_text(size = 25),
-    legend.text = element_text(size = 18),
-    legend.title = element_text(size = 22),
-    plot.tag = element_text(size = 25, face = "bold"))
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    plot.tag = element_text(size = 20, face = "bold"))
     return(graph)}
 ```
 
@@ -116,7 +116,7 @@ prob_graph <- function(pred, yvalJitter, tag, ylab){
 prop_weekly <- brewers_weekly %>% 
   group_by(Date, `Hedging.Type`) %>% 
   summarize(
-    prop_meets = mean(`Meets.Hedge`)
+    prop_meets = mean(`Meets.Hedge`)*100
   ) 
 prop_weekly$prop <- ((prop_weekly$prop_meets * 3)/15)*100 # multiplied by 3 (3 plots for each hedging type) and divide by 15 as the total number of plots
 
@@ -126,8 +126,9 @@ prop_weekly$day <- as.numeric(difftime(prop_weekly$Date, prop_weekly$Date[1], un
 prop_weekly$day <- factor(prop_weekly$day)
   
 #***Hedging Proportion over time***
-p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
-  geom_bar(stat = "identity", position = "stack") +
+p <- ggplot(prop_weekly, aes(day, prop_meets, fill = `Hedging.Type`)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~`Hedging.Type`)+
   geom_vline(xintercept = which(levels(factor(prop_weekly$day)) == "49") + 0.5, 
              linetype = "dotted", 
              color = "black",
@@ -150,8 +151,8 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
     "SCR" = "#fde725ff",
     "WB" = "#440154ff"), name = "Hedging Type") +
   theme(
-    axis.text.x = element_text(size = 12),
-    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 9),
+    axis.text.y = element_text(size = 9),
     axis.title.x = element_text(size = 15),
     axis.title.y = element_text(size = 15),
     legend.text = element_text(size = 9),
@@ -159,7 +160,7 @@ p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
   )
 p
 
-ggsave( filename = "Figure_4.pdf", path = "Brewers_Plots/Figures/Publication_Ready/", plot = p, device = "pdf", dpi = 600, width = 8, height = 5)
+ggsave( filename = "Figure_4.pdf", path = "Brewers_Plots/Figures/Publication_Ready/", plot = p, device = "pdf", dpi = 600, width = 12, height = 8)
 ```
 
 ## GLM for H. stipulacea encroachment
