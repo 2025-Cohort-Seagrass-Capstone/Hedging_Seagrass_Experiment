@@ -118,7 +118,7 @@ prop_weekly <- brewers_weekly %>%
   summarize(
     prop_meets = mean(`Meets.Hedge`)
   ) 
-prop_weekly$prop <- (prop_weekly$prop_meets * 3)/15 # multiplied by 3 (3 plots for each hedging type) and divide by 15 as the total number of plots
+prop_weekly$prop <- ((prop_weekly$prop_meets * 3)/15)*100 # multiplied by 3 (3 plots for each hedging type) and divide by 15 as the total number of plots
 
 prop_weekly$day <- prop_weekly$Date - prop_weekly$Date[1]
 # number of days since starting is now the response variable
@@ -128,8 +128,10 @@ prop_weekly$day <- factor(prop_weekly$day)
 #***Hedging Proportion over time***
 p <- ggplot(prop_weekly, aes(day, prop, fill = `Hedging.Type`)) +
   geom_bar(stat = "identity", position = "stack") +
-  xlab("Date") +
-  ylim(0, 1) +
+  geom_vline(xintercept = which(levels(factor(prop_weekly$day)) == "49") + 0.5, 
+             linetype = "dotted", 
+             color = "black",
+             linewidth = 0.9)+
   ylab(expression(paste(italic("H. stipulacea"), " at hedge (%)"))) +
   theme_bw() +
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting"))) +
