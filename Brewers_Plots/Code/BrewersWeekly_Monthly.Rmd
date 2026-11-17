@@ -128,7 +128,12 @@ prop_weekly$day <- factor(prop_weekly$day)
 #***Hedging Proportion over time***
 p <- ggplot(prop_weekly, aes(day, prop_meets, fill = `Hedging.Type`)) +
   geom_bar(stat = "identity") +
-  facet_wrap(~`Hedging.Type`)+
+  facet_wrap(~`Hedging.Type`, labeller = labeller(`Hedging.Type` = c(
+      "WB" = "WB",
+      "C" = "Experimental Control",
+      "GB" = "GB",
+      "M" = "SCR",
+      "R" = "LCR")))+
   geom_vline(xintercept = which(levels(factor(prop_weekly$day)) == "49") + 0.5, 
              linetype = "dotted", 
              color = "black",
@@ -138,12 +143,6 @@ p <- ggplot(prop_weekly, aes(day, prop_meets, fill = `Hedging.Type`)) +
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting"))) +
   scale_fill_manual(
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
-    labels = c(
-      "WB" = "WB",
-      "C" = "Experimental Control",
-      "GB" = "GB",
-      "M" = "SCR",
-      "R" = "LCR"),
       values = c(
     "C" = "#22a884ff",
     "GB" = "#2a788eff",
@@ -155,8 +154,7 @@ p <- ggplot(prop_weekly, aes(day, prop_meets, fill = `Hedging.Type`)) +
     axis.text.y = element_text(size = 9),
     axis.title.x = element_text(size = 15),
     axis.title.y = element_text(size = 15),
-    legend.text = element_text(size = 9),
-    legend.title = element_text(size = 10)
+    legend.position = "none"
   )
 p
 
