@@ -135,6 +135,7 @@ richness_fam <- richness_fam %>%
 #Publication Graph#
 richness_plot <- ggplot(data = richness_fam)+
   geom_boxplot(aes(x = hedging, y = family_richness, fill = hedging))+
+  geom_jitter(aes(x = hedging, y = family_richness, group = hedging), width = 0.14, height = 0, alpha = 0.4)+
   labs(x = "Hedging Type", y = "Average Number of Families Observed")+
   theme_bw()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))+
