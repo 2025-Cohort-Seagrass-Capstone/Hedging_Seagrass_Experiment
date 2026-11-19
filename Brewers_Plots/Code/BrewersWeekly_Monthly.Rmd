@@ -126,8 +126,9 @@ prop_weekly$day <- as.numeric(difftime(prop_weekly$Date, prop_weekly$Date[1], un
 prop_weekly$day <- factor(prop_weekly$day)
   
 #***Hedging Proportion over time***
-p <- ggplot(prop_weekly, aes(day, prop_meets, fill = `Hedging.Type`)) +
-  geom_bar(stat = "identity") +
+p <- ggplot(prop_weekly, aes(day, prop_meets, group = `Hedging.Type`, color = `Hedging.Type`)) +
+  # geom_bar(stat = "identity") +
+  geom_line(linewidth = 1.4)+
   facet_wrap(~`Hedging.Type`, labeller = labeller(`Hedging.Type` = c(
       "WB" = "WB",
       "C" = "Experimental Control",
@@ -141,7 +142,7 @@ p <- ggplot(prop_weekly, aes(day, prop_meets, fill = `Hedging.Type`)) +
   ylab(expression(paste(italic("H. stipulacea"), " at hedge (%)"))) +
   theme_bw() +
   xlab(expression(paste("Day Since ", italic("T. testudinum"), " Plug Planting"))) +
-  scale_fill_manual(
+  scale_color_manual(
     breaks = c("C", "GB", "LCR", "SCR", "WB"),
       values = c(
     "C" = "#22a884ff",
@@ -180,7 +181,9 @@ check_overdispersion(meetsmodeltime)
 #***meeting hedge prob***
 pred_m <- ggpredict(meetsmodeltime, terms = c("day", "Hedging.Type"))
 
-m <- prob_graph(pred_m, Meets.Hedge, "A", "P(Meeting the Hedge)")
+m <- prob_graph(pred_m, Meets.Hedge, "A", "P(Meeting the Hedge)") +
+  theme(legend.position = "none",
+        axis.title.x = element_blank()) 
 #shows at what day does the H. stipulacea meet the hedge
 
 ## Growth Over with time
@@ -194,7 +197,8 @@ check_overdispersion(gOmodeltime)
 pred_O <- ggpredict(gOmodeltime, terms = c("day", "Hedging.Type"))
 
 #***growth over prob***
-o <- prob_graph(pred_O, `Grwth/O`, "B", "P(Over the Hedge)")
+o <- prob_graph(pred_O, `Grwth/O`, "B", "P(Over the Hedge)") +
+  theme(axis.title.x = element_blank())
 #shows at what day does the H. stipulacea Grow Over the hedge
 
 ## Growth Under with time
@@ -208,7 +212,8 @@ pred_U <- ggpredict(gUmodeltime, terms = c("day", "Hedging.Type"))
 
 #***growth Under prob***
 
-u <- prob_graph(pred_U, `Grwth/U`, "C", "P(Under the Hedge)")
+u <- prob_graph(pred_U, `Grwth/U`, "C", "P(Under the Hedge)") +
+  theme(legend.position = "none")
 
 #shows at what day does the H. stipulacea Grow Under the hedge
 
